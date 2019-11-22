@@ -1,0 +1,10 @@
+# directories
+.idea/*
+tmp/*
+var/*
+
+# compiled binaries
+*.pyc
+
+# config files
+etc/config.json
