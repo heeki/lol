@@ -1,6 +1,16 @@
 # Documentation
 League of Legends API utility for data extraction and analytics
 
+## Setup
+A config.json file will need to be configured in the etc folder for this script to work. That config.json file needs
+to be populated with your developer API key with Riot.
+
+```
+{
+   "api_key": "your_key_here"
+}
+```
+
 ## Execution Commands
 ```
 python src/execute.py --request get_summoner_by_name--summoner {summoner_name} | jq
