@@ -30,6 +30,13 @@ def main():
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
+        if args.request == "get_matchdata_by_account":
+            resp1 = api.get_matchlist_by_account(args.eaid)
+            payload1 = analytics.list_matches(resp1)
+            for match in payload1:
+                match_id = match["gid"]
+                resp2 = api.get_match_by_id(match_id)
+                analytics.pretty_print_match(resp2)
         if args.request == "get_match_by_id":
             resp = api.get_match_by_id(args.match_id)
             payload = analytics.summarize_match(resp)
@@ -43,7 +50,6 @@ def main():
             if args.roles is not None:
                 roles = args.roles.split(",")
             print("filter={}".format(analytics.filter_match(payload, args.summoner, roles, args.lane)))
-
 
 
 if __name__ == "__main__":

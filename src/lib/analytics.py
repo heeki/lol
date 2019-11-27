@@ -67,6 +67,7 @@ class Analytics:
 
     def summarize_match(self, data):
         payload = {
+            "gameId": data["gameId"],
             "gameCreation": self.__convert_epoch_to_datetime(data["gameCreation"]),
             "gameDuration": data["gameDuration"] / 60,
             "map": self.queue_id_to_name[data["queueId"]]["map"],
@@ -78,7 +79,8 @@ class Analytics:
             if team["teamId"] not in payload["teams"]:
                 payload["teams"][tid] = {}
                 payload["teams"][tid]["participants"] = {}
-            payload["teams"][tid]["win"] = team["win"]
+            if "win" in payload["teams"][tid]:
+                payload["teams"][tid]["win"] = team["win"]
         for participant in data["participants"]:
             pid = participant["participantId"]
             tid = participant["teamId"]
@@ -88,13 +90,17 @@ class Analytics:
             payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
             payload["teams"][tid]["participants"][pid]["role"] = participant["timeline"]["role"]
             payload["teams"][tid]["participants"][pid]["lane"] = participant["timeline"]["lane"]
-            # payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
-            # payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
+            if participant["spell1Id"] != 0:
+                payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
+            if participant["spell1Id"] != 0:
+                payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
             payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
             payload["teams"][tid]["participants"][pid]["deaths"] = participant["stats"]["deaths"]
             payload["teams"][tid]["participants"][pid]["assists"] = participant["stats"]["assists"]
-            payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
-            payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
+            if "wardsPlaced" in participant["stats"]:
+                payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
+            if "wardsKilled" in participant["stats"]:
+                payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
             payload["teams"][tid]["participants"][pid]["totalDamageDealtToChampions"] = participant["stats"]["totalDamageDealtToChampions"]
             payload["teams"][tid]["participants"][pid]["totalDamageTaken"] = participant["stats"]["totalDamageTaken"]
             payload["teams"][tid]["participants"][pid]["totalMinionsKilled"] = participant["stats"]["totalMinionsKilled"]
@@ -122,15 +128,27 @@ class Analytics:
         return check_summoner & check_role & check_lane
 
     def pretty_print_match(self, data):
-        for tid in data["teams"]:
-            for pid in data["teams"][tid]["participants"]:
-                header = "summonerName"
-                output = data["teams"][tid]["participants"][pid]["summonerName"]
-                for k in data["teams"][tid]["participants"][pid]:
-                    if k != "summonerName":
-                        header += ",{}".format(k)
-                        output += ",{}".format(data["teams"][tid]["participants"][pid][k])
-                if pid == 1:
-                    print(header)
-                print(output)
-
+        payload = self.summarize_match(data)
+        metadata = {
+            "gameId": payload["gameId"],
+            "gameCreation": payload["gameCreation"],
+            "map": payload["map"],
+            "queue": payload["queue"]
+        }
+        print(json.dumps(metadata))
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                print(json.dumps(payload["teams"][tid]["participants"][pid]))
+        # csv output
+        # for tid in payload["teams"]:
+        #     for pid in payload["teams"][tid]["participants"]:
+        #         header = "summonerName"
+        #         output = payload["teams"][tid]["participants"][pid]["summonerName"]
+        #         for k in payload["teams"][tid]["participants"][pid]:
+        #             if k != "summonerName":
+        #                 header += ",{}".format(k)
+        #                 output += ",{}".format(payload["teams"][tid]["participants"][pid][k])
+        #         if pid == 1:
+        #             print(header)
+        #         print(output)
+        print("")
