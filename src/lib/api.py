@@ -43,7 +43,7 @@ class Api:
                     self.log.error("get_data_from_url(): ssl.SSLError {}".format(e))
                 time.sleep(15)
         except KeyboardInterrupt:
-            self.log.error("get_data_from_uril(): user interrupted")
+            self.log.error("get_data_from_url(): user interrupted")
             sys.exit(1)
         return json.loads(data)
 

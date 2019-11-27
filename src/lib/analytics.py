@@ -48,11 +48,11 @@ class Analytics:
     ################################################################################
     # analytics functions
     ################################################################################
-    def list_matches(self, data):
+    def list_matches(self, data, roles=None, lane=None):
         payload = []
         for match in data["matches"]:
-            # print(json.dumps(match))
             info = {
+                "platform": match["platformId"],
                 "gid": match["gameId"],
                 "champion": self.champion_id_to_name[match["champion"]],
                 "map": self.queue_id_to_name[match["queue"]]["map"],
@@ -62,7 +62,11 @@ class Analytics:
                 "role": match["role"],
                 "lane": match["lane"]
             }
-            payload.append(info)
+            if roles is None and lane is None:
+                payload.append(info)
+            else:
+                if self.filter_match_by_meta(match, roles, lane):
+                    payload.append(info)
         return payload
 
     def summarize_match(self, data):
@@ -112,7 +116,30 @@ class Analytics:
                     payload["teams"][tid]["participants"][pid]["summonerName"] = participant["player"]["summonerName"]
         return payload
 
-    def filter_match(self, data, summoner, roles, lane):
+    def filter_match_by_meta(self, data, roles, lane):
+        check_queue = False
+        check_role = False
+        check_lane = False
+        queues = [
+            400,    # Summoner's Rift 5v5 Draft Pick games
+            430,    # Summoner's Rift 5v5 Blind Pick games
+            # 450,    # Howling Abyss 5v5 ARAM games
+            # 830,    # Summoner's Rift Co-op vs. AI Intro Bot games
+            # 840,    # Summoner's Rift Co-op vs. AI Beginner Bot games
+            # 850,    # Summoner's Rift Co-op vs. AI Intermediate Bot games
+            # 2000,   # Summoner's Rift Tutorial 1
+        ]
+        for queue in queues:
+            if data["queue"] == queue:
+                check_queue = True
+        for role in roles:
+            if data["role"] == role:
+                check_role = True
+        if data["lane"] == lane:
+            check_lane = True
+        return check_queue & check_role & check_lane
+
+    def filter_match_by_data(self, data, summoner, roles, lane):
         check_summoner = False
         check_role = False
         check_lane = False
