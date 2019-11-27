@@ -9,6 +9,8 @@ def main():
     parser.add_argument('--summoner', help='summoner name')
     parser.add_argument('--eaid', help='encrypted account id')
     parser.add_argument('--match_id', help='match id')
+    parser.add_argument('--roles', help='comma separated list of possible roles')
+    parser.add_argument('--lane', help='lane')
     parser.add_argument('--request', help='api request')
     parser.add_argument('--output', default="json", help='print as json|csv')
     args, unknown = parser.parse_known_args()
@@ -35,6 +37,13 @@ def main():
                 print(json.dumps(payload))
             elif args.output == "csv":
                 analytics.pretty_print_match(payload)
+        if args.request == "filter_match":
+            resp = api.get_match_by_id(args.match_id)
+            payload = analytics.summarize_match(resp)
+            if args.roles is not None:
+                roles = args.roles.split(",")
+            print("filter={}".format(analytics.filter_match(payload, args.summoner, roles, args.lane)))
+
 
 
 if __name__ == "__main__":

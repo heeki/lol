@@ -86,6 +86,8 @@ class Analytics:
                 payload["teams"][tid]["participants"][pid] = {}
             payload["teams"][tid]["participants"][pid]["champion"] = self.champion_id_to_name[participant["championId"]]
             payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
+            payload["teams"][tid]["participants"][pid]["role"] = participant["timeline"]["role"]
+            payload["teams"][tid]["participants"][pid]["lane"] = participant["timeline"]["lane"]
             # payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
             # payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
             payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
@@ -103,6 +105,21 @@ class Analytics:
                 if pid in payload["teams"][tid]["participants"]:
                     payload["teams"][tid]["participants"][pid]["summonerName"] = participant["player"]["summonerName"]
         return payload
+
+    def filter_match(self, data, summoner, roles, lane):
+        check_summoner = False
+        check_role = False
+        check_lane = False
+        for tid in data["teams"]:
+            for pid in data["teams"][tid]["participants"]:
+                if data["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    check_summoner = True
+                for role in roles:
+                    if data["teams"][tid]["participants"][pid]["role"] == role:
+                        check_role = True
+                if data["teams"][tid]["participants"][pid]["lane"] == lane:
+                    check_lane = True
+        return check_summoner & check_role & check_lane
 
     def pretty_print_match(self, data):
         for tid in data["teams"]:
