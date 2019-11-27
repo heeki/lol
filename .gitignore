@@ -8,3 +8,4 @@ var/*
 
 # config files
 etc/config.json
+environment.sh
