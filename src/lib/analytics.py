@@ -85,6 +85,7 @@ class Analytics:
             if pid not in payload["teams"][tid]["participants"]:
                 payload["teams"][tid]["participants"][pid] = {}
             payload["teams"][tid]["participants"][pid]["champion"] = self.champion_id_to_name[participant["championId"]]
+            payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
             # payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
             # payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
             payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]

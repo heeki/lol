@@ -1,4 +1,5 @@
 import json
+import os
 import ssl
 import sys
 import time
@@ -46,13 +47,29 @@ class Api:
     # specific functions
     ################################################################################
     def get_summoner_by_name(self, name):
-        path = "lol/summoner/v4/summoners/by-name/{}".format(name)
-        return self.__get_data_from_url(path)
+        cache = "var/get_summoner_by_name_{}.json".format(name)
+        if os.path.exists(cache):
+            with open(cache) as jdata:
+                return json.load(jdata)
+        else:
+            path = "lol/summoner/v4/summoners/by-name/{}".format(name)
+            payload = self.__get_data_from_url(path)
+            with open(cache, "w") as jdata:
+                jdata.write(payload)
+            return payload
 
     def get_matchlist_by_account(self, account_id):
         path = "lol/match/v4/matchlists/by-account/{}".format(account_id)
         return self.__get_data_from_url(path)
 
     def get_match_by_id(self, match_id):
-        path = "lol/match/v4/matches/{}".format(match_id)
-        return self.__get_data_from_url(path)
+        cache = "var/get_match_by_id_{}.json".format(match_id)
+        if os.path.exists(cache):
+            with open(cache) as jdata:
+                return json.load(jdata)
+        else:
+            path = "lol/match/v4/matches/{}".format(match_id)
+            payload = self.__get_data_from_url(path)
+            with open(cache, "w") as jdata:
+                jdata.write(payload)
+            return payload
