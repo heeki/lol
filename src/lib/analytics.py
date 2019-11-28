@@ -3,7 +3,7 @@ import datetime
 
 
 class Analytics:
-    def __init__(self):
+    def __init__(self, api):
         with open("etc/champion.json") as jdata:
             self.champions = json.load(jdata)
             self.champion_id_to_name = self.__generate_champion_id_to_name()
@@ -13,6 +13,7 @@ class Analytics:
         with open("etc/summoner.json") as jdata:
             self.summoner = json.load(jdata)
             self.spell_id_to_name = self.__generate_spell_id_to_name()
+        self.api = api
 
     ################################################################################
     # generic functions
@@ -83,7 +84,7 @@ class Analytics:
             if team["teamId"] not in payload["teams"]:
                 payload["teams"][tid] = {}
                 payload["teams"][tid]["participants"] = {}
-            if "win" in payload["teams"][tid]:
+            if "win" in team:
                 payload["teams"][tid]["win"] = team["win"]
         for participant in data["participants"]:
             pid = participant["participantId"]
@@ -139,21 +140,6 @@ class Analytics:
             check_lane = True
         return check_queue & check_role & check_lane
 
-    def filter_match_by_data(self, data, summoner, roles, lane):
-        check_summoner = False
-        check_role = False
-        check_lane = False
-        for tid in data["teams"]:
-            for pid in data["teams"][tid]["participants"]:
-                if data["teams"][tid]["participants"][pid]["summonerName"] == summoner:
-                    check_summoner = True
-                for role in roles:
-                    if data["teams"][tid]["participants"][pid]["role"] == role:
-                        check_role = True
-                if data["teams"][tid]["participants"][pid]["lane"] == lane:
-                    check_lane = True
-        return check_summoner & check_role & check_lane
-
     def pretty_print_match(self, data):
         payload = self.summarize_match(data)
         metadata = {
@@ -179,3 +165,44 @@ class Analytics:
         #             print(header)
         #         print(output)
         print("")
+
+    # derivative functions
+    def get_matchdata_by_account(self, data):
+        payload = self.list_matches(data)
+        for match in payload:
+            resp = self.api.get_match_by_id(match["gid"])
+            self.pretty_print_match(resp)
+
+    def filter_match_by_data(self, data, summoner, roles, lane):
+        payload = self.summarize_match(data)
+        check_summoner = False
+        check_role = False
+        check_lane = False
+        target_pid = 0
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    target_pid = pid
+                    check_summoner = True
+        for role in roles:
+            if payload["teams"][tid]["participants"][target_pid]["role"] == role:
+                check_role = True
+        if payload["teams"][tid]["participants"][target_pid]["lane"] == lane:
+            check_lane = True
+        return check_summoner & check_role & check_lane
+
+    def get_summoner_data_from_match(self, data, summoner):
+        payload = self.summarize_match(data)
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    result = payload["teams"][tid]["participants"][pid]
+                    result["win"] = payload["teams"][tid]["win"]
+                    return result
+
+    def get_stats_by_account_role(self, data, summoner, roles, lane):
+        payload = self.list_matches(data, roles, lane)
+        for match in payload:
+            resp = self.api.get_match_by_id(match["gid"])
+            payload2 = self.get_summoner_data_from_match(resp, summoner)
+            print(json.dumps(payload2))

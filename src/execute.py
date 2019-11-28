@@ -16,14 +16,16 @@ def main():
     args, unknown = parser.parse_known_args()
 
     with open("etc/config.json") as jdata:
+        # initialization
         config = json.load(jdata)
         api = Api(config)
-        analytics = Analytics()
-
+        analytics = Analytics(api)
         if args.roles is not None:
             roles = args.roles.split(",")
-            # print("filtering on roles={} and lane={}".format(roles, args.lane))
+        else:
+            roles = None
 
+        # fundamental requests
         if args.request == "get_summoner_by_name":
             resp = api.get_summoner_by_name(args.summoner)
             if args.output == "json":
@@ -34,13 +36,6 @@ def main():
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
-        if args.request == "get_matchdata_by_account":
-            resp1 = api.get_matchlist_by_account(args.eaid)
-            payload1 = analytics.list_matches(resp1)
-            for match in payload1:
-                match_id = match["gid"]
-                resp2 = api.get_match_by_id(match_id)
-                analytics.pretty_print_match(resp2)
         if args.request == "get_match_by_id":
             resp = api.get_match_by_id(args.match_id)
             payload = analytics.summarize_match(resp)
@@ -48,10 +43,17 @@ def main():
                 print(json.dumps(payload))
             elif args.output == "csv":
                 analytics.pretty_print_match(payload)
+
+        # derivative requests
+        if args.request == "get_matchdata_by_account":
+            resp = api.get_matchlist_by_account(args.eaid)
+            analytics.get_matchdata_by_account(resp)
         if args.request == "filter_match_by_data":
             resp = api.get_match_by_id(args.match_id)
-            payload = analytics.summarize_match(resp)
-            print("filter={}".format(analytics.filter_match_by_data(payload, args.summoner, roles, args.lane)))
+            print(analytics.filter_match_by_data(resp, args.summoner, roles, args.lane))
+        if args.request == "get_stats_by_account_role":
+            resp = api.get_matchlist_by_account(args.eaid)
+            analytics.get_stats_by_account_role(resp, args.summoner, roles, args.lane)
 
 
 if __name__ == "__main__":
