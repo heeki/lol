@@ -248,6 +248,25 @@ class Analytics:
         ]
         df = df.reindex(columns=order)
         print(df)
+
+        print("\nWin/Loss:")
+        summary = df.groupby(["win"]).agg({
+            "win": "count"
+        })
+        print(summary.unstack("win"))
+
+        print("\nOverall Summary:")
+        summary = df.agg({
+            "kills": "mean",
+            "deaths": "mean",
+            "assists": "mean",
+            "totalDamageDealtToChampions": "mean",
+            "totalDamageTaken": "mean",
+            "totalMinionsKilled": "mean"
+        })
+        print(summary)
+
+        print("\nSummary by Champion/Win:")
         summary = df.groupby(["champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
