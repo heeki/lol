@@ -253,7 +253,13 @@ class Analytics:
         summary = df.groupby(["win"]).agg({
             "win": "count"
         })
-        print(summary.unstack("win"))
+        # summary.columns = summary.columns.droplevel(0)
+        # print("type={}".format(type(summary)))
+        # print("columns={}".format(summary.columns))
+        # print("index={}".format(summary.index))
+        # print("index.name={}".format(summary.index.name))
+        summary.index.name = None
+        print(summary.to_string(header=False))
 
         print("\nOverall Summary:")
         summary = df.agg({
