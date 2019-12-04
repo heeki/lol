@@ -10,7 +10,8 @@ def main():
     parser.add_argument('--eaid', help='encrypted account id')
     parser.add_argument('--match_id', help='match id')
     parser.add_argument('--roles', help='comma separated list of possible roles')
-    parser.add_argument('--lane', help='lane')
+    parser.add_argument('--lanes', help='comma separated list of possible lanes')
+    parser.add_argument('--champions', help='comma separated list of possible champions')
     parser.add_argument('--request', help='api request')
     parser.add_argument('--output', default="json", help='print as json|csv')
     args, unknown = parser.parse_known_args()
@@ -24,6 +25,14 @@ def main():
             roles = args.roles.split(",")
         else:
             roles = None
+        if args.lanes is not None:
+            lanes = args.lanes.split(",")
+        else:
+            lanes = None
+        if args.champions is not None:
+            champions = args.champions.split(",")
+        else:
+            champions = None
 
         # fundamental requests
         if args.request == "get_summoner_by_name":
@@ -32,7 +41,7 @@ def main():
                 print(json.dumps(resp))
         if args.request == "get_matchlist_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
-            payload = analytics.list_matches(resp, roles, args.lane)
+            payload = analytics.get_matchlist(resp, roles, lanes)
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
@@ -50,10 +59,13 @@ def main():
             analytics.get_matchdata_by_account(resp)
         if args.request == "filter_match_by_data":
             resp = api.get_match_by_id(args.match_id)
-            print(analytics.filter_match_by_data(resp, args.summoner, roles, args.lane))
-        if args.request == "get_stats_by_account_role":
+            print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
+        if args.request == "get_stats_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
-            analytics.get_stats_by_account_role(resp, args.summoner, roles, args.lane)
+            # print("roles={}".format(json.dumps(roles)))
+            # print("lanes={}".format(json.dumps(lanes)))
+            # print("champions={}".format(json.dumps(champions)))
+            analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
 
 
 if __name__ == "__main__":

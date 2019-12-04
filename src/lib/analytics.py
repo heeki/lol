@@ -1,5 +1,6 @@
-import json
 import datetime
+import json
+import pandas as pd
 
 
 class Analytics:
@@ -14,12 +15,15 @@ class Analytics:
             self.summoner = json.load(jdata)
             self.spell_id_to_name = self.__generate_spell_id_to_name()
         self.api = api
+        pd.options.display.float_format = "{:.2f}".format
+        pd.options.display.max_rows = None
 
     ################################################################################
     # generic functions
     ################################################################################
     def __convert_epoch_to_datetime(self, epoch):
-        return datetime.datetime.fromtimestamp(epoch/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        # return datetime.datetime.fromtimestamp(epoch/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
+        return datetime.datetime.fromtimestamp(epoch/1000).strftime('%Y-%m-%d %H:%M:%S')
 
     ################################################################################
     # helper functions
@@ -47,9 +51,9 @@ class Analytics:
         return mapping
 
     ################################################################################
-    # analytics functions
+    # get functions
     ################################################################################
-    def list_matches(self, data, roles=None, lane=None):
+    def get_matchlist(self, data, roles=None, lanes=None, champions=None):
         payload = []
         for match in data["matches"]:
             info = {
@@ -63,13 +67,92 @@ class Analytics:
                 "role": match["role"],
                 "lane": match["lane"]
             }
-            if roles is None and lane is None:
+            if roles is None and lanes is None and champions is None:
                 payload.append(info)
-            else:
-                if self.filter_match_by_meta(match, roles, lane):
+            elif roles is not None and lanes is not None:
+                if self.filter_match_by_meta(match, roles, lanes):
+                    payload.append(info)
+            elif champions is not None:
+                if self.filter_match_by_champion(match, champions):
                     payload.append(info)
         return payload
 
+    def get_matchdata_by_account(self, data):
+        payload = self.get_matchlist(data)
+        for match in payload:
+            resp = self.api.get_match_by_id(match["gid"])
+            self.pretty_print_match(resp)
+
+    def get_summoner_data_from_match(self, data, summoner):
+        payload = self.summarize_match(data)
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    result = payload["teams"][tid]["participants"][pid]
+                    result["win"] = payload["teams"][tid]["win"]
+                    return result
+
+    ################################################################################
+    # filter functions
+    ################################################################################
+    def filter_match_by_queue(self, data):
+        check_queue = False
+        queues = [
+            400,    # Summoner's Rift 5v5 Draft Pick games
+            430,    # Summoner's Rift 5v5 Blind Pick games
+            # 450,    # Howling Abyss 5v5 ARAM games
+            # 830,    # Summoner's Rift Co-op vs. AI Intro Bot games
+            # 840,    # Summoner's Rift Co-op vs. AI Beginner Bot games
+            # 850,    # Summoner's Rift Co-op vs. AI Intermediate Bot games
+            # 2000,   # Summoner's Rift Tutorial 1
+        ]
+        for queue in queues:
+            if data["queue"] == queue:
+                check_queue = True
+        return check_queue
+
+    def filter_match_by_champion(self, data, champions):
+        check_queue = self.filter_match_by_queue(data)
+        check_champion = False
+        for champion in champions:
+            if self.champion_id_to_name[data["champion"]] == champion:
+                check_champion = True
+        return check_queue & check_champion
+
+    def filter_match_by_meta(self, data, roles, lanes):
+        check_queue = self.filter_match_by_queue(data)
+        check_role = False
+        check_lane = False
+        for role in roles:
+            if data["role"] == role:
+                check_role = True
+        for lane in lanes:
+            if data["lane"] == lane:
+                check_lane = True
+        return check_queue & check_role & check_lane
+
+    def filter_match_by_data(self, data, summoner, roles, lanes):
+        payload = self.summarize_match(data)
+        check_summoner = False
+        check_role = False
+        check_lane = False
+        target_pid = 0
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    target_pid = pid
+                    check_summoner = True
+        for role in roles:
+            if payload["teams"][tid]["participants"][target_pid]["role"] == role:
+                check_role = True
+        for lane in lanes:
+            if payload["teams"][tid]["participants"][target_pid]["lane"] == lane:
+                check_lane = True
+        return check_summoner & check_role & check_lane
+
+    ################################################################################
+    # summary functions
+    ################################################################################
     def summarize_match(self, data):
         payload = {
             "gameId": data["gameId"],
@@ -117,29 +200,9 @@ class Analytics:
                     payload["teams"][tid]["participants"][pid]["summonerName"] = participant["player"]["summonerName"]
         return payload
 
-    def filter_match_by_meta(self, data, roles, lane):
-        check_queue = False
-        check_role = False
-        check_lane = False
-        queues = [
-            400,    # Summoner's Rift 5v5 Draft Pick games
-            430,    # Summoner's Rift 5v5 Blind Pick games
-            # 450,    # Howling Abyss 5v5 ARAM games
-            # 830,    # Summoner's Rift Co-op vs. AI Intro Bot games
-            # 840,    # Summoner's Rift Co-op vs. AI Beginner Bot games
-            # 850,    # Summoner's Rift Co-op vs. AI Intermediate Bot games
-            # 2000,   # Summoner's Rift Tutorial 1
-        ]
-        for queue in queues:
-            if data["queue"] == queue:
-                check_queue = True
-        for role in roles:
-            if data["role"] == role:
-                check_role = True
-        if data["lane"] == lane:
-            check_lane = True
-        return check_queue & check_role & check_lane
-
+    ################################################################################
+    # print functions
+    ################################################################################
     def pretty_print_match(self, data):
         payload = self.summarize_match(data)
         metadata = {
@@ -152,57 +215,46 @@ class Analytics:
         for tid in payload["teams"]:
             for pid in payload["teams"][tid]["participants"]:
                 print(json.dumps(payload["teams"][tid]["participants"][pid]))
-        # csv output
-        # for tid in payload["teams"]:
-        #     for pid in payload["teams"][tid]["participants"]:
-        #         header = "summonerName"
-        #         output = payload["teams"][tid]["participants"][pid]["summonerName"]
-        #         for k in payload["teams"][tid]["participants"][pid]:
-        #             if k != "summonerName":
-        #                 header += ",{}".format(k)
-        #                 output += ",{}".format(payload["teams"][tid]["participants"][pid][k])
-        #         if pid == 1:
-        #             print(header)
-        #         print(output)
         print("")
 
-    # derivative functions
-    def get_matchdata_by_account(self, data):
-        payload = self.list_matches(data)
+    def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
+        payload = self.get_matchlist(data, roles, lanes, champions)
+        details = []
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
-            self.pretty_print_match(resp)
-
-    def filter_match_by_data(self, data, summoner, roles, lane):
-        payload = self.summarize_match(data)
-        check_summoner = False
-        check_role = False
-        check_lane = False
-        target_pid = 0
-        for tid in payload["teams"]:
-            for pid in payload["teams"][tid]["participants"]:
-                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
-                    target_pid = pid
-                    check_summoner = True
-        for role in roles:
-            if payload["teams"][tid]["participants"][target_pid]["role"] == role:
-                check_role = True
-        if payload["teams"][tid]["participants"][target_pid]["lane"] == lane:
-            check_lane = True
-        return check_summoner & check_role & check_lane
-
-    def get_summoner_data_from_match(self, data, summoner):
-        payload = self.summarize_match(data)
-        for tid in payload["teams"]:
-            for pid in payload["teams"][tid]["participants"]:
-                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
-                    result = payload["teams"][tid]["participants"][pid]
-                    result["win"] = payload["teams"][tid]["win"]
-                    return result
-
-    def get_stats_by_account_role(self, data, summoner, roles, lane):
-        payload = self.list_matches(data, roles, lane)
-        for match in payload:
-            resp = self.api.get_match_by_id(match["gid"])
-            payload2 = self.get_summoner_data_from_match(resp, summoner)
-            print(json.dumps(payload2))
+            data = self.get_summoner_data_from_match(resp, summoner)
+            data["timestamp"] = match["timestamp"]
+            details.append(data)
+        df = pd.DataFrame(details)
+        order = [
+            "summonerName",
+            "timestamp",
+            "win",
+            "champion",
+            "champLevel",
+            "kills",
+            "deaths",
+            "assists",
+            "wardsPlaced",
+            "wardsKilled",
+            "totalDamageDealtToChampions",
+            "totalDamageTaken",
+            "totalMinionsKilled",
+            "neutralMinionsKilled",
+            "spell1",
+            "spell2",
+            "role",
+            "lane"
+        ]
+        df = df.reindex(columns=order)
+        print(df)
+        summary = df.groupby(["champion", "win"]).agg({
+            "win": "count",
+            "kills": "mean",
+            "deaths": "mean",
+            "assists": "mean",
+            "totalDamageDealtToChampions": "mean",
+            "totalDamageTaken": "mean",
+            "totalMinionsKilled": "mean"
+        })
+        print(summary)

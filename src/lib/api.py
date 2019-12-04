@@ -31,12 +31,14 @@ class Api:
                     break
                 except socket.error as e:
                     self.log.error("get_data_from_url(): socket.error {}".format(e))
+                    if e.code == 403:
+                        self.log.error("get_data_from_url(): auth error -> retrieve updated api key")
                     sys.exit(1)
                 except urllib.error.URLError as e:
                     self.log.error("get_data_from_url(): urllib.error.URLError {}".format(e))
                     if e.code == 403:
                         self.log.error("get_data_from_url(): auth error -> retrieve updated api key")
-                        sys.exit(1)
+                    sys.exit(1)
                 except urllib.error.HTTPError as e:
                     self.log.error("get_data_from_url(): urllib.error.HTTPError {}".format(e))
                 except ssl.SSLError as e:
