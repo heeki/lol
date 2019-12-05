@@ -231,17 +231,25 @@ class Analytics:
 
     def pretty_print_stats_by_account(self, data):
         df = pd.DataFrame(data)
+        df["kda"] = df.apply(
+            lambda x: (x["kills"] + x["assists"]) / x["deaths"] if x["deaths"] != 0 else x["kills"] + x["assists"],
+            axis=1)
+        df["dddtRatio"] = df.apply(
+            lambda x: x["totalDamageDealtToChampions"] / x["totalDamageTaken"],
+            axis=1)
         order = [
             "summonerName",
             "timestamp",
             "win",
             "champion",
             "champLevel",
+            "kda",
             "kills",
             "deaths",
             "assists",
             "wardsPlaced",
             "wardsKilled",
+            "dddtRatio",
             "totalDamageDealtToChampions",
             "totalDamageTaken",
             "totalMinionsKilled",
@@ -264,9 +272,11 @@ class Analytics:
 
         print("\nOverall Summary:")
         summary_stats = df.agg({
+            "kda": "mean",
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
+            "dddtRatio": "mean",
             "totalDamageDealtToChampions": "mean",
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
@@ -275,10 +285,12 @@ class Analytics:
 
         print("\nSummary by Champion/Win:")
         summary_champs = df.groupby(["champion", "win"]).agg({
+            "kda": "mean",
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
+            "dddtRatio": "mean",
             "totalDamageDealtToChampions": "mean",
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
