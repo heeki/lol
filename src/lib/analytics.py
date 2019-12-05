@@ -19,14 +19,14 @@ class Analytics:
         pd.options.display.max_rows = None
 
     ################################################################################
-    # generic functions
+    # functions: generic
     ################################################################################
     def __convert_epoch_to_datetime(self, epoch):
         # return datetime.datetime.fromtimestamp(epoch/1000).strftime('%Y-%m-%d %H:%M:%S.%f')
         return datetime.datetime.fromtimestamp(epoch/1000).strftime('%Y-%m-%d %H:%M:%S')
 
     ################################################################################
-    # helper functions
+    # functions: generic helper
     ################################################################################
     def __generate_champion_id_to_name(self):
         mapping = {}
@@ -51,7 +51,7 @@ class Analytics:
         return mapping
 
     ################################################################################
-    # get functions
+    # functions: get
     ################################################################################
     def get_matchlist(self, data, roles=None, lanes=None, champions=None):
         payload = []
@@ -120,7 +120,7 @@ class Analytics:
         return result
 
     ################################################################################
-    # filter functions
+    # functions: filter
     ################################################################################
     def filter_match_by_queue(self, data):
         check_queue = False
@@ -178,7 +178,7 @@ class Analytics:
         return check_summoner & check_role & check_lane
 
     ################################################################################
-    # summary functions
+    # functions: summary
     ################################################################################
     def summarize_match(self, data):
         payload = {
@@ -228,23 +228,8 @@ class Analytics:
         return payload
 
     ################################################################################
-    # print functions
+    # functions: print helper
     ################################################################################
-    def pretty_print_match(self, data, detail=False):
-        payload = self.summarize_match(data)
-        metadata = {
-            "gameId": payload["gameId"],
-            "gameCreation": payload["gameCreation"],
-            "map": payload["map"],
-            "queue": payload["queue"]
-        }
-        print(json.dumps(metadata))
-        if detail:
-            for tid in payload["teams"]:
-                for pid in payload["teams"][tid]["participants"]:
-                    print(json.dumps(payload["teams"][tid]["participants"][pid]))
-            print("")
-
     def __generate_df_for_summoner_data_from_match(self, data):
         df = pd.DataFrame(data)
         df["kda"] = df.apply(
@@ -278,22 +263,15 @@ class Analytics:
         df = df.reindex(columns=order)
         return df
 
-    def pretty_print_stats(self, data, summoner):
-        df = self.__generate_df_for_summoner_data_from_match(data)
-        filtered = df["summonerName"] == summoner
-
-        print("\nFiltered Games:")
-        print(df[filtered])
-
-        print("\nWin/Loss:")
-        summary_wl = df[filtered].groupby(["win"]).agg({
+    def __generate_summary_wins(self, data):
+        df = data.groupby(["win"]).agg({
             "win": "count"
         })
-        summary_wl.index.name = None
-        print(summary_wl.to_string(header=False))
+        df.index.name = None
+        return df.to_string(header=False)
 
-        print("\nOverall Summary:")
-        summary_stats = df[filtered].agg({
+    def __generate_summary_overall(self, data):
+        df = data.agg({
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
@@ -302,12 +280,12 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         })
-        kda = pd.Series([(df[filtered]["kills"].sum() + df[filtered]["assists"].sum()) / df[filtered]["deaths"].sum()], index=["kda"])
-        summary_stats = kda.append(summary_stats)
-        print(summary_stats)
+        kda = pd.Series([(data["kills"].sum() + data["assists"].sum()) / data["deaths"].sum()], index=["kda"])
+        df = kda.append(df)
+        return df
 
-        print("\nSummary by Champion/Win:")
-        summary_champs = df[filtered].groupby(["champion", "win"]).agg({
+    def __generate_summary_by_champion(self, data):
+        df = data.groupby(["champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -317,21 +295,21 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         }).rename(columns={"win": "count"})
-        summary_champs.index = summary_champs.index.rename("result", level=1)
+        df.index = df.index.rename("result", level=1)
 
-        # print("type={}".format(type(summary_champs)))
-        # print("columns={}".format(summary_champs.columns))
-        # print("index={}".format(summary_champs.index))
-        # print("index.name={}".format(summary_champs.index.name))
+        # print("type={}".format(type(df)))
+        # print("columns={}".format(df.columns))
+        # print("index={}".format(df.index))
+        # print("index.name={}".format(df.index.name))
 
-        # for champion in summary_champs.index.get_level_values("champion").unique():
-        #     for result in summary_champs.index.get_level_values("result"):
+        # for champion in df.index.get_level_values("champion").unique():
+        #     for result in df.index.get_level_values("result"):
         #         print("champion={}, result={}".format(champion, result))
-        #         kda = self.__calculate_kda(summary_champs.loc[champion, result])
+        #         kda = self.__calculate_kda(df.loc[champion, result])
         #         print("kda={}".format(kda))
-        #         print(summary_champs.loc[champion, result])
+        #         print(df.loc[champion, result])
 
-        summary_champs["kda"] = summary_champs["kills"].add(summary_champs["assists"]).div(summary_champs["deaths"])
+        df["kda"] = df["kills"].add(df["assists"]).div(df["deaths"])
         order = [
             "count",
             "kda",
@@ -343,6 +321,39 @@ class Analytics:
             "totalDamageTaken",
             "totalMinionsKilled"
         ]
-        summary_champs = summary_champs.reindex(columns=order)
+        df = df.reindex(columns=order)
+        return df
 
-        print(summary_champs)
+    ################################################################################
+    # functions: print
+    ################################################################################
+    def pretty_print_match(self, data, detail=False):
+        payload = self.summarize_match(data)
+        metadata = {
+            "gameId": payload["gameId"],
+            "gameCreation": payload["gameCreation"],
+            "map": payload["map"],
+            "queue": payload["queue"]
+        }
+        print(json.dumps(metadata))
+        if detail:
+            for tid in payload["teams"]:
+                for pid in payload["teams"][tid]["participants"]:
+                    print(json.dumps(payload["teams"][tid]["participants"][pid]))
+            print("")
+
+    def pretty_print_stats(self, data, summoner):
+        df = self.__generate_df_for_summoner_data_from_match(data)
+        filtered = df["summonerName"] == summoner
+
+        print("\nFiltered Games:")
+        print(df[filtered])
+
+        print("\nWin/Loss:")
+        print(self.__generate_summary_wins(df[filtered]))
+
+        print("\nOverall Summary:")
+        print(self.__generate_summary_overall(df[filtered]))
+
+        print("\nSummary by Champion/Win:")
+        print(self.__generate_summary_by_champion(df[filtered]))
