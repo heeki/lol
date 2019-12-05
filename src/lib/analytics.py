@@ -285,7 +285,7 @@ class Analytics:
         return df
 
     def __generate_summary_by_champion(self, data):
-        df = data.groupby(["champion", "win"]).agg({
+        df = data.groupby(["summonerName", "champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -295,7 +295,7 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         }).rename(columns={"win": "count"})
-        df.index = df.index.rename("result", level=1)
+        df.index = df.index.rename("result", level=2)
 
         # print("type={}".format(type(df)))
         # print("columns={}".format(df.columns))
@@ -349,11 +349,11 @@ class Analytics:
         print("\nFiltered Games:")
         print(df[filtered])
 
-        print("\nWin/Loss:")
-        print(self.__generate_summary_wins(df[filtered]))
-
-        print("\nOverall Summary:")
+        print("\nSummary of Summoner Performance:")
         print(self.__generate_summary_overall(df[filtered]))
 
+        print("\nSummary of Win/Loss:")
+        print(self.__generate_summary_wins(df[filtered]))
+
         print("\nSummary by Champion/Win:")
-        print(self.__generate_summary_by_champion(df[filtered]))
+        print(self.__generate_summary_by_champion(df))
