@@ -40,8 +40,8 @@ def main():
             teammates = None
         # print("roles={}".format(json.dumps(roles)))
         # print("lanes={}".format(json.dumps(lanes)))
-        print("champions={}".format(json.dumps(champions)))
-        print("teammates={}".format(json.dumps(teammates)))
+        # print("champions={}".format(json.dumps(champions)))
+        # print("teammates={}".format(json.dumps(teammates)))
 
         # fundamental requests
         if args.request == "get_summoner_by_name":

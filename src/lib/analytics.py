@@ -126,6 +126,7 @@ class Analytics:
         check_queue = False
         queues = [
             400,    # Summoner's Rift 5v5 Draft Pick games
+            420,    # Summoner's Rift 5v5 Ranked Solo
             430,    # Summoner's Rift 5v5 Blind Pick games
             # 450,    # Howling Abyss 5v5 ARAM games
             # 830,    # Summoner's Rift Co-op vs. AI Intro Bot games
