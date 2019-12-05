@@ -72,11 +72,11 @@ def main():
         if args.request == "get_stats_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
             payload = analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
-            analytics.pretty_print_stats_by_account(payload)
+            analytics.pretty_print_stats(payload, args.summoner)
         if args.request == "get_stats_by_champion":
             resp = api.get_matchlist_by_account(args.eaid)
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
-            print(json.dumps(payload))
+            analytics.pretty_print_stats(payload, args.summoner)
 
 
 if __name__ == "__main__":

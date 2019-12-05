@@ -106,18 +106,17 @@ class Analytics:
     def get_stats_by_champion(self, data, summoner, champions=None, teammates=None):
         payload = self.get_matchlist(data, champions=champions)
         result = []
-        players = {}
         for match in payload:
-            print()
-            print(json.dumps(match))
             resp = self.api.get_match_by_id(match["gid"])
-            players[summoner] = self.get_summoner_data_from_match(resp, summoner)
-            for teammate in teammates:
-                data = self.get_summoner_data_from_match(resp, teammate)
-                if data is not None:
-                    players[teammate] = data
-                    players[teammate]["timestamp"] = match["timestamp"]
-                    print(json.dumps(players[teammate]))
+            data = self.get_summoner_data_from_match(resp, summoner)
+            data["timestamp"] = match["timestamp"]
+            result.append(data)
+            if teammates is not None:
+                for teammate in teammates:
+                    data = self.get_summoner_data_from_match(resp, teammate)
+                    if data is not None:
+                        data["timestamp"] = match["timestamp"]
+                        result.append(data)
         return result
 
     ################################################################################
@@ -246,7 +245,7 @@ class Analytics:
                     print(json.dumps(payload["teams"][tid]["participants"][pid]))
             print("")
 
-    def pretty_print_stats_by_account(self, data):
+    def __generate_df_for_summoner_data_from_match(self, data):
         df = pd.DataFrame(data)
         df["kda"] = df.apply(
             lambda x: (x["kills"] + x["assists"]) / x["deaths"] if x["deaths"] != 0 else x["kills"] + x["assists"],
@@ -277,18 +276,24 @@ class Analytics:
             "lane"
         ]
         df = df.reindex(columns=order)
+        return df
+
+    def pretty_print_stats(self, data, summoner):
+        df = self.__generate_df_for_summoner_data_from_match(data)
+        filtered = df["summonerName"] == summoner
+
         print("\nFiltered Games:")
-        print(df)
+        print(df[filtered])
 
         print("\nWin/Loss:")
-        summary_wl = df.groupby(["win"]).agg({
+        summary_wl = df[filtered].groupby(["win"]).agg({
             "win": "count"
         })
         summary_wl.index.name = None
         print(summary_wl.to_string(header=False))
 
         print("\nOverall Summary:")
-        summary_stats = df.agg({
+        summary_stats = df[filtered].agg({
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
@@ -297,14 +302,12 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         })
-        kda = pd.Series([(df["kills"].sum() + df["assists"].sum()) / df["deaths"].sum()], index=["kda"])
+        kda = pd.Series([(df[filtered]["kills"].sum() + df[filtered]["assists"].sum()) / df[filtered]["deaths"].sum()], index=["kda"])
         summary_stats = kda.append(summary_stats)
         print(summary_stats)
 
-        # TODO: Need to implement custom aggregation for KDA, as computed value (avg of kda) is incorrect
         print("\nSummary by Champion/Win:")
-        summary_champs = df.groupby(["champion", "win"]).agg({
-            "kda": "mean",
+        summary_champs = df[filtered].groupby(["champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -315,9 +318,31 @@ class Analytics:
             "totalMinionsKilled": "mean"
         }).rename(columns={"win": "count"})
         summary_champs.index = summary_champs.index.rename("result", level=1)
+
         # print("type={}".format(type(summary_champs)))
         # print("columns={}".format(summary_champs.columns))
         # print("index={}".format(summary_champs.index))
         # print("index.name={}".format(summary_champs.index.name))
-        # summary_champs.columns = summary_champs.columns.droplevel(0)
+
+        # for champion in summary_champs.index.get_level_values("champion").unique():
+        #     for result in summary_champs.index.get_level_values("result"):
+        #         print("champion={}, result={}".format(champion, result))
+        #         kda = self.__calculate_kda(summary_champs.loc[champion, result])
+        #         print("kda={}".format(kda))
+        #         print(summary_champs.loc[champion, result])
+
+        summary_champs["kda"] = summary_champs["kills"].add(summary_champs["assists"]).div(summary_champs["deaths"])
+        order = [
+            "count",
+            "kda",
+            "kills",
+            "deaths",
+            "assists",
+            "dddtRatio",
+            "totalDamageDealtToChampions",
+            "totalDamageTaken",
+            "totalMinionsKilled"
+        ]
+        summary_champs = summary_champs.reindex(columns=order)
+
         print(summary_champs)
