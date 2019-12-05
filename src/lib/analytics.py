@@ -263,13 +263,6 @@ class Analytics:
         df = df.reindex(columns=order)
         return df
 
-    def __generate_summary_wins(self, data):
-        df = data.groupby(["win"]).agg({
-            "win": "count"
-        })
-        df.index.name = None
-        return df.to_string(header=False)
-
     def __generate_summary_overall(self, data):
         df = data.agg({
             "kills": "mean",
@@ -282,6 +275,23 @@ class Analytics:
         })
         kda = pd.Series([(data["kills"].sum() + data["assists"].sum()) / data["deaths"].sum()], index=["kda"])
         df = kda.append(df)
+        return df
+
+    def __generate_summary_wins(self, data, summoner):
+        df = data.groupby(["summonerName", "win"]).agg({
+            "win": "count"
+        }).rename(columns={"win": "count"})
+        df.index = df.index.rename("result", level=1)
+        df = df.unstack(1)
+        df = df.fillna(0)
+        df.columns = df.columns.get_level_values(1)
+        df.columns.name = None
+        df = df.reindex(columns=["Win", "Fail"])
+        n = df.index.get_loc(summoner)
+        # print("n={}, index={}".format(n, df.index))
+        # print("a={}".format(df.iloc[[n], :]))
+        # print("b={}".format(df.drop(summoner)))
+        df = pd.concat([df.iloc[[n], :], df.drop(summoner, axis=0)], axis=0)
         return df
 
     def __generate_summary_by_champion(self, data):
@@ -350,10 +360,19 @@ class Analytics:
         print(df[filtered])
 
         print("\nSummary of Summoner Performance:")
-        print(self.__generate_summary_overall(df[filtered]))
+        print(self.__generate_summary_overall(df[filtered]).to_string())
 
         print("\nSummary of Win/Loss:")
-        print(self.__generate_summary_wins(df[filtered]))
+        print(self.__generate_summary_wins(df, summoner))
+
+        # print("\nSummary of Win/Loss for Summoner:")
+        # summary_winloss = self.__generate_summary_wins(df)
+        # print(summary_winloss.filter(items=[summoner], axis=0))
+
+        # print("\nSummary of Win/Loss for Team:")
+        # team = list(summary_winloss.index)
+        # team.remove(summoner)
+        # print(summary_winloss.filter(items=team, axis=0))
 
         print("\nSummary by Champion/Win:")
         print(self.__generate_summary_by_champion(df))
