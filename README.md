@@ -37,9 +37,13 @@ Command line parameter arguments by request (derivative):
     * requires `--summoner {name}`
     * optional `--roles {comma_separated_list_of_roles, e.g. NONE, SOLO, DUO, DUO_CARRY, DUO_SUPPORT}`
     * optional `--lanes {comma_separated_list_of_lanes, e.g. TOP, MIDDLE, BOTTOM, JUNGLE}`
-    * optional `--lanes {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
+    * optional `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
     * Note: if filtering by champion, must supply a champion list only
     * Note: if filtering by role or lane, must supply by role and lane
+* `--request get_stats_by_champion`:
+    * requires `--eaid {eaid}`
+    * requires `--summoner {name}`
+    * requires `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
 
 Example execution:
 ```
@@ -52,4 +56,5 @@ python src/execute.py --request get_match_by_id --match_id $MATCH_ID --output cs
 python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
 python src/execute.py --request get_stats_by_account --eaid $EAID --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
 python src/execute.py --request get_stats_by_account --eaid $EAID --summoner $SUMMONER_NAME --champions $CHAMPIONS
+python src/execute.py --request get_stats_by_champion --eaid $EAID --summoner $SUMMONER_NAME --champions $CHAMPIONS
 ```

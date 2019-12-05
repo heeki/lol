@@ -95,13 +95,30 @@ class Analytics:
 
     def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
         payload = self.get_matchlist(data, roles, lanes, champions)
-        details = []
+        result = []
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
             data = self.get_summoner_data_from_match(resp, summoner)
             data["timestamp"] = match["timestamp"]
-            details.append(data)
-        return details
+            result.append(data)
+        return result
+
+    def get_stats_by_champion(self, data, summoner, champions=None, teammates=None):
+        payload = self.get_matchlist(data, champions=champions)
+        result = []
+        players = {}
+        for match in payload:
+            print()
+            print(json.dumps(match))
+            resp = self.api.get_match_by_id(match["gid"])
+            players[summoner] = self.get_summoner_data_from_match(resp, summoner)
+            for teammate in teammates:
+                data = self.get_summoner_data_from_match(resp, teammate)
+                if data is not None:
+                    players[teammate] = data
+                    players[teammate]["timestamp"] = match["timestamp"]
+                    print(json.dumps(players[teammate]))
+        return result
 
     ################################################################################
     # filter functions
@@ -272,7 +289,6 @@ class Analytics:
 
         print("\nOverall Summary:")
         summary_stats = df.agg({
-            "kda": "mean",
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
@@ -281,8 +297,11 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         })
+        kda = pd.Series([(df["kills"].sum() + df["assists"].sum()) / df["deaths"].sum()], index=["kda"])
+        summary_stats = kda.append(summary_stats)
         print(summary_stats)
 
+        # TODO: Need to implement custom aggregation for KDA, as computed value (avg of kda) is incorrect
         print("\nSummary by Champion/Win:")
         summary_champs = df.groupby(["champion", "win"]).agg({
             "kda": "mean",

@@ -12,6 +12,7 @@ def main():
     parser.add_argument('--roles', help='comma separated list of possible roles')
     parser.add_argument('--lanes', help='comma separated list of possible lanes')
     parser.add_argument('--champions', help='comma separated list of possible champions')
+    parser.add_argument('--teammates', help='comma separated list of teammates')
     parser.add_argument('--request', help='api request')
     parser.add_argument('--output', default="json", help='print as json|csv')
     args, unknown = parser.parse_known_args()
@@ -33,9 +34,14 @@ def main():
             champions = args.champions.split(",")
         else:
             champions = None
+        if args.teammates is not None:
+            teammates = args.teammates.split(",")
+        else:
+            teammates = None
         # print("roles={}".format(json.dumps(roles)))
         # print("lanes={}".format(json.dumps(lanes)))
-        # print("champions={}".format(json.dumps(champions)))
+        print("champions={}".format(json.dumps(champions)))
+        print("teammates={}".format(json.dumps(teammates)))
 
         # fundamental requests
         if args.request == "get_summoner_by_name":
@@ -67,6 +73,10 @@ def main():
             resp = api.get_matchlist_by_account(args.eaid)
             payload = analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
             analytics.pretty_print_stats_by_account(payload)
+        if args.request == "get_stats_by_champion":
+            resp = api.get_matchlist_by_account(args.eaid)
+            payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
+            print(json.dumps(payload))
 
 
 if __name__ == "__main__":
