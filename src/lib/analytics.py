@@ -82,6 +82,7 @@ class Analytics:
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
             self.pretty_print_match(resp)
+        print("Games Found: {}".format(len(payload)))
 
     def get_summoner_data_from_match(self, data, summoner):
         payload = self.summarize_match(data)
@@ -91,6 +92,16 @@ class Analytics:
                     result = payload["teams"][tid]["participants"][pid]
                     result["win"] = payload["teams"][tid]["win"]
                     return result
+
+    def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
+        payload = self.get_matchlist(data, roles, lanes, champions)
+        details = []
+        for match in payload:
+            resp = self.api.get_match_by_id(match["gid"])
+            data = self.get_summoner_data_from_match(resp, summoner)
+            data["timestamp"] = match["timestamp"]
+            details.append(data)
+        return details
 
     ################################################################################
     # filter functions
@@ -203,7 +214,7 @@ class Analytics:
     ################################################################################
     # print functions
     ################################################################################
-    def pretty_print_match(self, data):
+    def pretty_print_match(self, data, detail=False):
         payload = self.summarize_match(data)
         metadata = {
             "gameId": payload["gameId"],
@@ -212,20 +223,14 @@ class Analytics:
             "queue": payload["queue"]
         }
         print(json.dumps(metadata))
-        for tid in payload["teams"]:
-            for pid in payload["teams"][tid]["participants"]:
-                print(json.dumps(payload["teams"][tid]["participants"][pid]))
-        print("")
+        if detail:
+            for tid in payload["teams"]:
+                for pid in payload["teams"][tid]["participants"]:
+                    print(json.dumps(payload["teams"][tid]["participants"][pid]))
+            print("")
 
-    def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
-        payload = self.get_matchlist(data, roles, lanes, champions)
-        details = []
-        for match in payload:
-            resp = self.api.get_match_by_id(match["gid"])
-            data = self.get_summoner_data_from_match(resp, summoner)
-            data["timestamp"] = match["timestamp"]
-            details.append(data)
-        df = pd.DataFrame(details)
+    def pretty_print_stats_by_account(self, data):
+        df = pd.DataFrame(data)
         order = [
             "summonerName",
             "timestamp",
@@ -247,22 +252,18 @@ class Analytics:
             "lane"
         ]
         df = df.reindex(columns=order)
+        print("\nFiltered Games:")
         print(df)
 
         print("\nWin/Loss:")
-        summary = df.groupby(["win"]).agg({
+        summary_wl = df.groupby(["win"]).agg({
             "win": "count"
         })
-        # summary.columns = summary.columns.droplevel(0)
-        # print("type={}".format(type(summary)))
-        # print("columns={}".format(summary.columns))
-        # print("index={}".format(summary.index))
-        # print("index.name={}".format(summary.index.name))
-        summary.index.name = None
-        print(summary.to_string(header=False))
+        summary_wl.index.name = None
+        print(summary_wl.to_string(header=False))
 
         print("\nOverall Summary:")
-        summary = df.agg({
+        summary_stats = df.agg({
             "kills": "mean",
             "deaths": "mean",
             "assists": "mean",
@@ -270,10 +271,10 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         })
-        print(summary)
+        print(summary_stats)
 
         print("\nSummary by Champion/Win:")
-        summary = df.groupby(["champion", "win"]).agg({
+        summary_champs = df.groupby(["champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -281,5 +282,11 @@ class Analytics:
             "totalDamageDealtToChampions": "mean",
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
-        })
-        print(summary)
+        }).rename(columns={"win": "count"})
+        summary_champs.index = summary_champs.index.rename("result", level=1)
+        # print("type={}".format(type(summary_champs)))
+        # print("columns={}".format(summary_champs.columns))
+        # print("index={}".format(summary_champs.index))
+        # print("index.name={}".format(summary_champs.index.name))
+        # summary_champs.columns = summary_champs.columns.droplevel(0)
+        print(summary_champs)

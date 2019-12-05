@@ -33,6 +33,9 @@ def main():
             champions = args.champions.split(",")
         else:
             champions = None
+        # print("roles={}".format(json.dumps(roles)))
+        # print("lanes={}".format(json.dumps(lanes)))
+        # print("champions={}".format(json.dumps(champions)))
 
         # fundamental requests
         if args.request == "get_summoner_by_name":
@@ -62,10 +65,8 @@ def main():
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
         if args.request == "get_stats_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
-            # print("roles={}".format(json.dumps(roles)))
-            # print("lanes={}".format(json.dumps(lanes)))
-            # print("champions={}".format(json.dumps(champions)))
-            analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
+            payload = analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
+            analytics.pretty_print_stats_by_account(payload)
 
 
 if __name__ == "__main__":

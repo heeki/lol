@@ -74,6 +74,7 @@ class Api:
             payload = self.__get_data_from_url(path)
             with open(cache, "w") as jdata:
                 jdata.write(json.dumps(payload))
+            return payload
 
     def get_match_by_id(self, match_id):
         cache = "var/get_match_by_id_{}.json".format(match_id)
