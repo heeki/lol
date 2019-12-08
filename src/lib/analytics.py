@@ -91,6 +91,7 @@ class Analytics:
                 if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
                     result = payload["teams"][tid]["participants"][pid]
                     result["win"] = payload["teams"][tid]["win"]
+                    result["queueId"] = payload["queueId"]
                     return result
 
     def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
@@ -186,6 +187,7 @@ class Analytics:
             "gameId": data["gameId"],
             "gameCreation": self.__convert_epoch_to_datetime(data["gameCreation"]),
             "gameDuration": data["gameDuration"] / 60,
+            "queueId": data["queueId"],
             "map": self.queue_id_to_name[data["queueId"]]["map"],
             "queue": self.queue_id_to_name[data["queueId"]]["description"],
             "teams": {}
@@ -242,6 +244,7 @@ class Analytics:
         order = [
             "summonerName",
             "timestamp",
+            "queueId",
             "win",
             "champion",
             "champLevel",
@@ -296,7 +299,7 @@ class Analytics:
         return df
 
     def __generate_summary_by_champion(self, data):
-        df = data.groupby(["summonerName", "champion", "win"]).agg({
+        df = data.groupby(["summonerName", "role", "champion", "win"]).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -306,7 +309,7 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         }).rename(columns={"win": "count"})
-        df.index = df.index.rename("result", level=2)
+        df.index = df.index.rename("result", level=3)
 
         # print("type={}".format(type(df)))
         # print("columns={}".format(df.columns))

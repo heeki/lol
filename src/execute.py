@@ -54,6 +54,8 @@ def main():
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
+
+        # derivative requests
         if args.request == "get_match_by_id":
             resp = api.get_match_by_id(args.match_id)
             payload = analytics.summarize_match(resp)
@@ -61,14 +63,14 @@ def main():
                 print(json.dumps(payload))
             elif args.output == "csv":
                 analytics.pretty_print_match(payload)
-
-        # derivative requests
         if args.request == "get_matchdata_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
             analytics.get_matchdata_by_account(resp)
         if args.request == "filter_match_by_data":
             resp = api.get_match_by_id(args.match_id)
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
+
+        # analytics requests
         if args.request == "get_stats_by_account":
             resp = api.get_matchlist_by_account(args.eaid)
             payload = analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
