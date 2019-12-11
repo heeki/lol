@@ -240,7 +240,7 @@ class Analytics:
             lambda x: (x["kills"] + x["assists"]) / x["deaths"] if x["deaths"] != 0 else x["kills"] + x["assists"],
             axis=1)
         df["dddtRatio"] = df.apply(
-            lambda x: x["totalDamageDealtToChampions"] / x["totalDamageTaken"],
+            lambda x: x["totalDamageDealtToChampions"] / x["totalDamageTaken"] if x["totalDamageTaken"] != 0 else 0,
             axis=1)
         order = [
             "summonerName",
