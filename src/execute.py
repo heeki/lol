@@ -64,7 +64,10 @@ def main():
                 analytics.pretty_print_match(payload)
         if args.request == "get_matchdata_by_summoner":
             resp = api.get_matchlist_by_summoner(args.summoner)
-            analytics.get_matchdata_by_summoner(resp)
+            payload = analytics.get_matchdata_by_summoner(resp)
+            for match in payload:
+                analytics.pretty_print_match(match)
+            print("found {} games".format(len(payload)))
         if args.request == "filter_match_by_data":
             resp = api.get_match_by_id(args.match_id)
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))

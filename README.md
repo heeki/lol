@@ -46,14 +46,14 @@ Command line parameter arguments by request (analytics):
 Example execution:
 ```
 python src/execute.py --request get_summoner_by_name --summoner $SUMMONER_NAME
-python src/execute.py --request get_matchlist_by_account --summoner $SUMMONER_NAME
-python src/execute.py --request get_matchlist_by_account --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_matchdata_by_account --summoner $SUMMONER_NAME
+python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER_NAME
+python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
+python src/execute.py --request get_matchdata_by_summoner --summoner $SUMMONER_NAME
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID --output csv
 python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_stats_by_account --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_stats_by_account --summoner $SUMMONER_NAME --champions $CHAMPIONS
+python src/execute.py --request get_stats_by_summoner --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
+python src/execute.py --request get_stats_by_summonert --summoner $SUMMONER_NAME --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS --teammates $TEAMMATES
 ```

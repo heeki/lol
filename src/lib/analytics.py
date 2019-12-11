@@ -78,11 +78,12 @@ class Analytics:
         return payload
 
     def get_matchdata_by_summoner(self, data):
-        payload = self.get_matchlist(data)
-        for match in payload:
+        matches = self.get_matchlist(data)
+        payload = []
+        for match in matches:
             resp = self.api.get_match_by_id(match["gid"])
-            self.pretty_print_match(resp)
-        print("Games Found: {}".format(len(payload)))
+            payload.append(resp)
+        return payload
 
     def get_summoner_data_from_match(self, data, summoner):
         payload = self.summarize_match(data)
