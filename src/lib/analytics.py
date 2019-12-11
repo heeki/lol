@@ -77,7 +77,7 @@ class Analytics:
                     payload.append(info)
         return payload
 
-    def get_matchdata_by_account(self, data):
+    def get_matchdata_by_summoner(self, data):
         payload = self.get_matchlist(data)
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
@@ -94,7 +94,7 @@ class Analytics:
                     result["queueId"] = payload["queueId"]
                     return result
 
-    def get_stats_by_account(self, data, summoner, roles=None, lanes=None, champions=None):
+    def get_stats_by_summoner(self, data, summoner, roles=None, lanes=None, champions=None):
         payload = self.get_matchlist(data, roles, lanes, champions)
         result = []
         for match in payload:

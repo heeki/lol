@@ -7,7 +7,6 @@ from lib.analytics import Analytics
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--summoner', help='summoner name')
-    parser.add_argument('--eaid', help='encrypted account id')
     parser.add_argument('--match_id', help='match id')
     parser.add_argument('--roles', help='comma separated list of possible roles')
     parser.add_argument('--lanes', help='comma separated list of possible lanes')
@@ -22,6 +21,8 @@ def main():
         config = json.load(jdata)
         api = Api(config)
         analytics = Analytics(api)
+
+        # parse arguments
         if args.roles is not None:
             roles = args.roles.split(",")
         else:
@@ -43,19 +44,17 @@ def main():
         # print("champions={}".format(json.dumps(champions)))
         # print("teammates={}".format(json.dumps(teammates)))
 
-        # fundamental requests
+        # basic requests
         if args.request == "get_summoner_by_name":
             resp = api.get_summoner_by_name(args.summoner)
             if args.output == "json":
                 print(json.dumps(resp))
-        if args.request == "get_matchlist_by_account":
-            resp = api.get_matchlist_by_account(args.eaid)
+        if args.request == "get_matchlist_by_summoner":
+            resp = api.get_matchlist_by_summoner(args.summoner)
             payload = analytics.get_matchlist(resp, roles, lanes)
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
-
-        # derivative requests
         if args.request == "get_match_by_id":
             resp = api.get_match_by_id(args.match_id)
             payload = analytics.summarize_match(resp)
@@ -63,20 +62,20 @@ def main():
                 print(json.dumps(payload))
             elif args.output == "csv":
                 analytics.pretty_print_match(payload)
-        if args.request == "get_matchdata_by_account":
-            resp = api.get_matchlist_by_account(args.eaid)
-            analytics.get_matchdata_by_account(resp)
+        if args.request == "get_matchdata_by_summoner":
+            resp = api.get_matchlist_by_summoner(args.summoner)
+            analytics.get_matchdata_by_summoner(resp)
         if args.request == "filter_match_by_data":
             resp = api.get_match_by_id(args.match_id)
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
 
         # analytics requests
         if args.request == "get_stats_by_account":
-            resp = api.get_matchlist_by_account(args.eaid)
-            payload = analytics.get_stats_by_account(resp, args.summoner, roles, lanes, champions)
+            resp = api.get_matchlist_by_summoner(args.summoner)
+            payload = analytics.get_stats_by_summoner(resp, args.summoner, roles, lanes, champions)
             analytics.pretty_print_stats(payload, args.summoner)
         if args.request == "get_stats_by_champion":
-            resp = api.get_matchlist_by_account(args.eaid)
+            resp = api.get_matchlist_by_summoner(args.summoner)
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
             analytics.pretty_print_stats(payload, args.summoner, teammates=teammates)
 

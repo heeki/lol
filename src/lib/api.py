@@ -73,13 +73,15 @@ class Api:
         data = self.__get_data_from_url(path)
         return data
 
-    def get_matchlist_by_account(self, account_id):
+    def get_matchlist_by_summoner(self, summoner):
         # initialize
+        resp = self.get_summoner_by_name(summoner)
+        eaid = resp["accountId"]
         payload = {
             "matches": []
         }
         # check cache
-        cache = "var/get_matchlist_by_account_{}.json".format(account_id)
+        cache = "var/get_matchlist_by_summoner_{}.json".format(summoner)
         if os.path.exists(cache):
             with open(cache) as jdata:
                 data = json.load(jdata)
@@ -90,7 +92,7 @@ class Api:
             is_more = True
             index = 0
             while is_more:
-                data = self.get_matchlist_page(account_id, index)
+                data = self.get_matchlist_page(eaid, index)
                 for match in data["matches"]:
                     payload["matches"].append(match) if match not in payload["matches"] else payload["matches"]
                 if len(data["matches"]) == 100:
@@ -102,7 +104,7 @@ class Api:
         return payload
 
     def get_match_by_id(self, match_id):
-        cache = "var/get_match_by_id_{}.json".format(match_id)
+        cache = "var/matches/get_match_by_id_{}.json".format(match_id)
         if os.path.exists(cache):
             with open(cache) as jdata:
                 return json.load(jdata)
