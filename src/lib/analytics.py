@@ -205,24 +205,25 @@ class Analytics:
             if pid not in payload["teams"][tid]["participants"]:
                 payload["teams"][tid]["participants"][pid] = {}
             payload["teams"][tid]["participants"][pid]["champion"] = self.champion_id_to_name[participant["championId"]]
-            payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
             payload["teams"][tid]["participants"][pid]["role"] = participant["timeline"]["role"]
             payload["teams"][tid]["participants"][pid]["lane"] = participant["timeline"]["lane"]
             if participant["spell1Id"] != 0:
                 payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
             if participant["spell1Id"] != 0:
                 payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
-            payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
-            payload["teams"][tid]["participants"][pid]["deaths"] = participant["stats"]["deaths"]
-            payload["teams"][tid]["participants"][pid]["assists"] = participant["stats"]["assists"]
-            if "wardsPlaced" in participant["stats"]:
-                payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
-            if "wardsKilled" in participant["stats"]:
-                payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
-            payload["teams"][tid]["participants"][pid]["totalDamageDealtToChampions"] = participant["stats"]["totalDamageDealtToChampions"]
-            payload["teams"][tid]["participants"][pid]["totalDamageTaken"] = participant["stats"]["totalDamageTaken"]
-            payload["teams"][tid]["participants"][pid]["totalMinionsKilled"] = participant["stats"]["totalMinionsKilled"]
-            payload["teams"][tid]["participants"][pid]["neutralMinionsKilled"] = participant["stats"]["neutralMinionsKilled"]
+            if "stats" in participant:
+                payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
+                payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
+                payload["teams"][tid]["participants"][pid]["deaths"] = participant["stats"]["deaths"]
+                payload["teams"][tid]["participants"][pid]["assists"] = participant["stats"]["assists"]
+                if "wardsPlaced" in participant["stats"]:
+                    payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
+                if "wardsKilled" in participant["stats"]:
+                    payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
+                payload["teams"][tid]["participants"][pid]["totalDamageDealtToChampions"] = participant["stats"]["totalDamageDealtToChampions"]
+                payload["teams"][tid]["participants"][pid]["totalDamageTaken"] = participant["stats"]["totalDamageTaken"]
+                payload["teams"][tid]["participants"][pid]["totalMinionsKilled"] = participant["stats"]["totalMinionsKilled"]
+                payload["teams"][tid]["participants"][pid]["neutralMinionsKilled"] = participant["stats"]["neutralMinionsKilled"]
         for participant in data["participantIdentities"]:
             pid = participant["participantId"]
             for tid in payload["teams"]:
@@ -265,6 +266,7 @@ class Analytics:
             "lane"
         ]
         df = df.reindex(columns=order)
+        # df = df.sort_values(by=["timestamp"], ascending=False)
         return df
 
     def __generate_summary_overall(self, data):
