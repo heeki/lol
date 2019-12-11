@@ -78,7 +78,7 @@ def main():
         if args.request == "get_stats_by_champion":
             resp = api.get_matchlist_by_account(args.eaid)
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
-            analytics.pretty_print_stats(payload, args.summoner)
+            analytics.pretty_print_stats(payload, args.summoner, teammates=teammates)
 
 
 if __name__ == "__main__":

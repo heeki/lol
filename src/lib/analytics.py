@@ -298,8 +298,12 @@ class Analytics:
         df = pd.concat([df.iloc[[n], :], df.drop(summoner, axis=0)], axis=0)
         return df
 
-    def __generate_summary_by_champion(self, data):
-        df = data.groupby(["summonerName", "role", "champion", "win"]).agg({
+    def __generate_summary_by_champion(self, data, include_role=True):
+        if include_role:
+            pivot = ["summonerName", "role", "champion", "win"]
+        else:
+            pivot = ["summonerName", "champion", "win"]
+        df = data.groupby(pivot).agg({
             "win": "count",
             "kills": "mean",
             "deaths": "mean",
@@ -309,7 +313,7 @@ class Analytics:
             "totalDamageTaken": "mean",
             "totalMinionsKilled": "mean"
         }).rename(columns={"win": "count"})
-        df.index = df.index.rename("result", level=3)
+        df.index = df.index.rename("result", level=pivot.index("win"))
 
         # print("type={}".format(type(df)))
         # print("columns={}".format(df.columns))
@@ -356,7 +360,7 @@ class Analytics:
                     print(json.dumps(payload["teams"][tid]["participants"][pid]))
             print("")
 
-    def pretty_print_stats(self, data, summoner):
+    def pretty_print_stats(self, data, summoner, teammates=None):
         df = self.__generate_df_for_summoner_data_from_match(data)
         filtered = df["summonerName"] == summoner
 
@@ -379,4 +383,4 @@ class Analytics:
         # print(summary_winloss.filter(items=team, axis=0))
 
         print("\nSummary by Champion/Win:")
-        print(self.__generate_summary_by_champion(df))
+        print(self.__generate_summary_by_champion(df, teammates is not None))
