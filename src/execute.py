@@ -73,7 +73,7 @@ def main():
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
 
         # analytics requests
-        if args.request == "get_stats_by_account":
+        if args.request == "get_stats_by_summoner":
             resp = api.get_matchlist_by_summoner(args.summoner)
             payload = analytics.get_stats_by_summoner(resp, args.summoner, roles, lanes, champions)
             analytics.pretty_print_stats(payload, args.summoner)
