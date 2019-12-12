@@ -41,7 +41,7 @@ Command line parameter arguments by request (analytics):
     * Note: if filtering by role or lane, must supply by role and lane
 * `--request get_stats_by_champion`:
     * requires `--summoner {name}`
-    * requires `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
+    * optional `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
 
 Example execution:
 ```
@@ -53,7 +53,7 @@ python src/execute.py --request get_match_by_id --match_id $MATCH_ID
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID --output csv
 python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
 python src/execute.py --request get_stats_by_summoner --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_stats_by_summonert --summoner $SUMMONER_NAME --champions $CHAMPIONS
+python src/execute.py --request get_stats_by_summoner --summoner $SUMMONER_NAME --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS --teammates $TEAMMATES
 ```
