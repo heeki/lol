@@ -51,6 +51,58 @@ class Analytics:
         return mapping
 
     ################################################################################
+    # functions: summary
+    ################################################################################
+    def summarize_match(self, data):
+        payload = {
+            "gameId": data["gameId"],
+            "gameCreation": self.__convert_epoch_to_datetime(data["gameCreation"]),
+            "gameDuration": data["gameDuration"] / 60,
+            "queueId": data["queueId"],
+            "map": self.queue_id_to_name[data["queueId"]]["map"],
+            "queue": self.queue_id_to_name[data["queueId"]]["description"],
+            "teams": {}
+        }
+        for team in data["teams"]:
+            tid = team["teamId"]
+            if team["teamId"] not in payload["teams"]:
+                payload["teams"][tid] = {}
+                payload["teams"][tid]["participants"] = {}
+            if "win" in team:
+                payload["teams"][tid]["win"] = team["win"]
+        for participant in data["participants"]:
+            pid = participant["participantId"]
+            tid = participant["teamId"]
+            if pid not in payload["teams"][tid]["participants"]:
+                payload["teams"][tid]["participants"][pid] = {}
+            payload["teams"][tid]["participants"][pid]["champion"] = self.champion_id_to_name[participant["championId"]]
+            payload["teams"][tid]["participants"][pid]["role"] = participant["timeline"]["role"]
+            payload["teams"][tid]["participants"][pid]["lane"] = participant["timeline"]["lane"]
+            if participant["spell1Id"] != 0:
+                payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
+            if participant["spell1Id"] != 0:
+                payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
+            if "stats" in participant:
+                payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
+                payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
+                payload["teams"][tid]["participants"][pid]["deaths"] = participant["stats"]["deaths"]
+                payload["teams"][tid]["participants"][pid]["assists"] = participant["stats"]["assists"]
+                if "wardsPlaced" in participant["stats"]:
+                    payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
+                if "wardsKilled" in participant["stats"]:
+                    payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
+                payload["teams"][tid]["participants"][pid]["totalDamageDealtToChampions"] = participant["stats"]["totalDamageDealtToChampions"]
+                payload["teams"][tid]["participants"][pid]["totalDamageTaken"] = participant["stats"]["totalDamageTaken"]
+                payload["teams"][tid]["participants"][pid]["totalMinionsKilled"] = participant["stats"]["totalMinionsKilled"]
+                payload["teams"][tid]["participants"][pid]["neutralMinionsKilled"] = participant["stats"]["neutralMinionsKilled"]
+        for participant in data["participantIdentities"]:
+            pid = participant["participantId"]
+            for tid in payload["teams"]:
+                if pid in payload["teams"][tid]["participants"]:
+                    payload["teams"][tid]["participants"][pid]["summonerName"] = participant["player"]["summonerName"]
+        return payload
+
+    ################################################################################
     # functions: get
     ################################################################################
     def get_matchlist(self, data, roles=None, lanes=None, champions=None):
@@ -85,15 +137,20 @@ class Analytics:
             payload.append(resp)
         return payload
 
-    def get_summoner_data_from_match(self, data, summoner):
+    def get_summoner_data_from_match(self, data, summoner, teammates=None):
         payload = self.summarize_match(data)
+        result = {}
+        tcount = 1
         for tid in payload["teams"]:
             for pid in payload["teams"][tid]["participants"]:
                 if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
                     result = payload["teams"][tid]["participants"][pid]
                     result["win"] = payload["teams"][tid]["win"]
                     result["queueId"] = payload["queueId"]
-                    return result
+                elif teammates is not None and payload["teams"][tid]["participants"][pid]["summonerName"] in teammates:
+                    tcount += 1
+        result["teammates"] = tcount
+        return result
 
     def get_stats_by_role(self, data, summoner, roles=None, lanes=None):
         payload = self.get_matchlist(data, roles, lanes)
@@ -110,14 +167,12 @@ class Analytics:
         result = []
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
-            data = self.get_summoner_data_from_match(resp, summoner)
-            print(json.dumps(data))
+            data = self.get_summoner_data_from_match(resp, summoner, teammates)
             data["timestamp"] = match["timestamp"]
-            # print(json.dumps(data))
             result.append(data)
             if teammates is not None:
                 for teammate in teammates:
-                    tmdata = self.get_summoner_data_from_match(resp, teammate)
+                    tmdata = self.get_summoner_data_from_match(resp, teammates)
                     if tmdata is not None:
                         tmdata["timestamp"] = match["timestamp"]
                         result.append(tmdata)
@@ -183,58 +238,6 @@ class Analytics:
         return check_summoner & check_role & check_lane
 
     ################################################################################
-    # functions: summary
-    ################################################################################
-    def summarize_match(self, data):
-        payload = {
-            "gameId": data["gameId"],
-            "gameCreation": self.__convert_epoch_to_datetime(data["gameCreation"]),
-            "gameDuration": data["gameDuration"] / 60,
-            "queueId": data["queueId"],
-            "map": self.queue_id_to_name[data["queueId"]]["map"],
-            "queue": self.queue_id_to_name[data["queueId"]]["description"],
-            "teams": {}
-        }
-        for team in data["teams"]:
-            tid = team["teamId"]
-            if team["teamId"] not in payload["teams"]:
-                payload["teams"][tid] = {}
-                payload["teams"][tid]["participants"] = {}
-            if "win" in team:
-                payload["teams"][tid]["win"] = team["win"]
-        for participant in data["participants"]:
-            pid = participant["participantId"]
-            tid = participant["teamId"]
-            if pid not in payload["teams"][tid]["participants"]:
-                payload["teams"][tid]["participants"][pid] = {}
-            payload["teams"][tid]["participants"][pid]["champion"] = self.champion_id_to_name[participant["championId"]]
-            payload["teams"][tid]["participants"][pid]["role"] = participant["timeline"]["role"]
-            payload["teams"][tid]["participants"][pid]["lane"] = participant["timeline"]["lane"]
-            if participant["spell1Id"] != 0:
-                payload["teams"][tid]["participants"][pid]["spell1"] = self.spell_id_to_name[participant["spell1Id"]]
-            if participant["spell1Id"] != 0:
-                payload["teams"][tid]["participants"][pid]["spell2"] = self.spell_id_to_name[participant["spell2Id"]]
-            if "stats" in participant:
-                payload["teams"][tid]["participants"][pid]["champLevel"] = participant["stats"]["champLevel"]
-                payload["teams"][tid]["participants"][pid]["kills"] = participant["stats"]["kills"]
-                payload["teams"][tid]["participants"][pid]["deaths"] = participant["stats"]["deaths"]
-                payload["teams"][tid]["participants"][pid]["assists"] = participant["stats"]["assists"]
-                if "wardsPlaced" in participant["stats"]:
-                    payload["teams"][tid]["participants"][pid]["wardsPlaced"] = participant["stats"]["wardsPlaced"]
-                if "wardsKilled" in participant["stats"]:
-                    payload["teams"][tid]["participants"][pid]["wardsKilled"] = participant["stats"]["wardsKilled"]
-                payload["teams"][tid]["participants"][pid]["totalDamageDealtToChampions"] = participant["stats"]["totalDamageDealtToChampions"]
-                payload["teams"][tid]["participants"][pid]["totalDamageTaken"] = participant["stats"]["totalDamageTaken"]
-                payload["teams"][tid]["participants"][pid]["totalMinionsKilled"] = participant["stats"]["totalMinionsKilled"]
-                payload["teams"][tid]["participants"][pid]["neutralMinionsKilled"] = participant["stats"]["neutralMinionsKilled"]
-        for participant in data["participantIdentities"]:
-            pid = participant["participantId"]
-            for tid in payload["teams"]:
-                if pid in payload["teams"][tid]["participants"]:
-                    payload["teams"][tid]["participants"][pid]["summonerName"] = participant["player"]["summonerName"]
-        return payload
-
-    ################################################################################
     # functions: print helper
     ################################################################################
     def __generate_df_for_summoner_data_from_match(self, data):
@@ -249,7 +252,7 @@ class Analytics:
             "summonerName",
             "timestamp",
             "queueId",
-            # "teammates",
+            "teammates",
             "win",
             "champion",
             "champLevel",
@@ -348,6 +351,19 @@ class Analytics:
         df = df.reindex(columns=order)
         return df
 
+    def __generate_summary_by_teammates(self, data):
+        df = data.groupby(["teammates", "win"]).agg({
+            "win": "count"
+        }).rename(columns={"win": "count"})
+        df.index = df.index.rename("result", level=1)
+        df = df.unstack(1)
+        df = df.fillna(0)
+        df.columns = df.columns.get_level_values(1)
+        df.columns.name = None
+        df = df.reindex(columns=["Win", "Fail"])
+        df["Win%"] = df["Win"] / (df["Win"] + df["Fail"])
+        return df
+
     ################################################################################
     # functions: print
     ################################################################################
@@ -366,8 +382,7 @@ class Analytics:
                     print(json.dumps(payload["teams"][tid]["participants"][pid]))
             print("")
 
-    def pretty_print_stats(self, data, summoner, teammates=None):
-        df = self.__generate_df_for_summoner_data_from_match(data)
+    def pretty_print_stats(self, df, summoner, teammates=None):
         filtered = df["summonerName"] == summoner
 
         print("\nFiltered Games:")
@@ -379,22 +394,16 @@ class Analytics:
         print("\nSummary of Win/Loss:")
         print(self.__generate_summary_wins(df, summoner))
 
-        # print("\nSummary of Win/Loss for Summoner:")
-        # summary_winloss = self.__generate_summary_wins(df)
-        # print(summary_winloss.filter(items=[summoner], axis=0))
-
-        # print("\nSummary of Win/Loss for Team:")
-        # team = list(summary_winloss.index)
-        # team.remove(summoner)
-        # print(summary_winloss.filter(items=team, axis=0))
+    def pretty_print_teammates(self, data, summoner, teammates=None):
+        df = self.__generate_df_for_summoner_data_from_match(data)
+        self.pretty_print_stats(df, summoner, teammates)
 
         print("\nSummary by Champion/Win:")
         print(self.__generate_summary_by_champion(df, teammates is not None))
 
     def pretty_print_impact(self, data, summoner, teammates):
         df = self.__generate_df_for_summoner_data_from_match(data)
-        filtered = df["summonerName"] == summoner
+        # self.pretty_print_stats(df, summoner, teammates)
 
-        print("\nFiltered Games:")
-        print(df[filtered])
-        # print(df.dtypes)
+        print("\nSummary by Comp/Win for {}:".format(summoner))
+        print(self.__generate_summary_by_teammates(df[df["summonerName"] == summoner]))

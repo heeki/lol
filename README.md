@@ -57,5 +57,5 @@ python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summ
 python src/execute.py --request get_stats_by_role --summoner $SUMMONER --roles $ROLES --lanes $LANES
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS --teammates $TEAMMATES
-python src/execute.py --request get_impact_by_team --summoner $SUMMONER  --teammates $TEAMMATES
+python src/execute.py --request get_impact_by_team --summoner $SUMMONER --teammates $TEAMMATES
 ```

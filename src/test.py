@@ -55,12 +55,12 @@ class Test(unittest.TestCase):
         payload = self.analytics.filter_match_by_data(resp, "higmeista", ["DUO_CARRY"], ["BOTTOM"])
         self.assertEqual(payload, True)
 
-    def test_get_stats_by_account(self):
+    def test_get_stats_by_role(self):
         """
-        demonstrate ability to generate stat dataframe by summoner
+        demonstrate ability to generate stat dataframe by role
         """
         resp = self.api.get_matchlist_by_summoner("higmeista")
-        payload = self.analytics.get_stats_by_role(resp, "higmeista", None, None, None)
+        payload = self.analytics.get_stats_by_role(resp, "higmeista", None, None)
         self.assertEqual(payload[-1]["queueId"], 2000)
 
     def test_get_stats_by_champion(self):
@@ -71,6 +71,13 @@ class Test(unittest.TestCase):
         payload = self.analytics.get_stats_by_champion(resp, "higmeista", ["Jinx"], ["Gelateria"])
         self.assertEqual(payload[-1]["champion"], "Nami")
 
+    def test_get_impact_by_team(self):
+        """
+        demonstrate ability to generate dataframe for impact
+        """
+        resp = self.api.get_matchlist_by_summoner("higmeista")
+        payload = self.analytics.get_stats_by_champion(resp, "higmeista", ["Jinx"], ["Gelateria"])
+
 
 if __name__ == "__main__":
     suite = unittest.TestSuite()
@@ -79,7 +86,7 @@ if __name__ == "__main__":
     suite.addTest(Test('test_get_match_by_id'))
     suite.addTest(Test('test_get_matchdata_by_summoner'))
     suite.addTest(Test('test_filter_match_by_data'))
-    suite.addTest(Test('test_get_stats_by_account'))
+    suite.addTest(Test('test_get_stats_by_role'))
     suite.addTest(Test('test_get_stats_by_champion'))
     runner = unittest.TextTestRunner(verbosity=2)
     runner.run(suite)

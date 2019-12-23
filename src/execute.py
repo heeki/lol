@@ -80,11 +80,13 @@ def main():
         if args.request == "get_stats_by_champion":
             resp = api.get_matchlist_by_summoner(args.summoner)
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
-            analytics.pretty_print_stats(payload, args.summoner, teammates=teammates)
+            analytics.pretty_print_teammates(payload, args.summoner, teammates=teammates)
         if args.request == "get_impact_by_team":
-            resp = api.get_matchlist_by_summoner(args.summoner)
-            payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
-            # analytics.pretty_print_impact(payload, args.summoner, teammates=teammates)
+            considerations = [args.summoner] + [teammate for teammate in teammates if teammate != args.summoner]
+            for consideration in considerations:
+                resp = api.get_matchlist_by_summoner(consideration)
+                payload = analytics.get_stats_by_champion(resp, consideration, champions=champions, teammates=teammates)
+                analytics.pretty_print_impact(payload, consideration, teammates=teammates)
 
 
 if __name__ == "__main__":
