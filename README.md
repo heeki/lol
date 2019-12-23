@@ -32,28 +32,30 @@ Command line parameter arguments by request (base):
     * requires `--lanes {comma_separated_list_of_lanes, e.g. TOP, MIDDLE, BOTTOM, JUNGLE}`
 
 Command line parameter arguments by request (analytics):
-* `--request get_stats_by_summoner`:
+* `--request get_stats_by_role`:
     * requires `--summoner {name}`
-    * optional `--roles {comma_separated_list_of_roles, e.g. NONE, SOLO, DUO, DUO_CARRY, DUO_SUPPORT}`
-    * optional `--lanes {comma_separated_list_of_lanes, e.g. TOP, MIDDLE, BOTTOM, JUNGLE}`
-    * optional `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
-    * Note: if filtering by champion, must supply a champion list only
-    * Note: if filtering by role or lane, must supply by role and lane
+    * requires `--roles {comma_separated_list_of_roles, e.g. NONE, SOLO, DUO, DUO_CARRY, DUO_SUPPORT}`
+    * requires `--lanes {comma_separated_list_of_lanes, e.g. TOP, MIDDLE, BOTTOM, JUNGLE}`
 * `--request get_stats_by_champion`:
     * requires `--summoner {name}`
-    * optional `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
+    * requires `--champions {comma_separated_list_of_champions, e.g. Ashe, Kai'Sa, Jinx, Caitlyn}`
+    * requires `--teammates {comma_separated_list_of_teammates}`
+* `--request get_impact_by_team`:
+    * requires `--summoner {name}`
+    * optional `--teammates {comma_separated_list_of_teammates}`
+
 
 Example execution:
 ```
-python src/execute.py --request get_summoner_by_name --summoner $SUMMONER_NAME
-python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER_NAME
-python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_matchdata_by_summoner --summoner $SUMMONER_NAME
+python src/execute.py --request get_summoner_by_name --summoner $SUMMONER
+python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER
+python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER --roles $ROLES --lanes $LANES
+python src/execute.py --request get_matchdata_by_summoner --summoner $SUMMONER
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID --output csv
-python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_stats_by_summoner --summoner $SUMMONER_NAME --roles $ROLES --lanes $LANES
-python src/execute.py --request get_stats_by_summoner --summoner $SUMMONER_NAME --champions $CHAMPIONS
-python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS
-python src/execute.py --request get_stats_by_champion --summoner $SUMMONER_NAME --champions $CHAMPIONS --teammates $TEAMMATES
+python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER --roles $ROLES --lanes $LANES
+python src/execute.py --request get_stats_by_role --summoner $SUMMONER --roles $ROLES --lanes $LANES
+python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS
+python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS --teammates $TEAMMATES
+python src/execute.py --request get_impact_by_team --summoner $SUMMONER  --teammates $TEAMMATES
 ```

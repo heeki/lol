@@ -95,8 +95,8 @@ class Analytics:
                     result["queueId"] = payload["queueId"]
                     return result
 
-    def get_stats_by_summoner(self, data, summoner, roles=None, lanes=None, champions=None):
-        payload = self.get_matchlist(data, roles, lanes, champions)
+    def get_stats_by_role(self, data, summoner, roles=None, lanes=None):
+        payload = self.get_matchlist(data, roles, lanes)
         result = []
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
@@ -111,14 +111,16 @@ class Analytics:
         for match in payload:
             resp = self.api.get_match_by_id(match["gid"])
             data = self.get_summoner_data_from_match(resp, summoner)
+            print(json.dumps(data))
             data["timestamp"] = match["timestamp"]
+            # print(json.dumps(data))
             result.append(data)
             if teammates is not None:
                 for teammate in teammates:
-                    data = self.get_summoner_data_from_match(resp, teammate)
-                    if data is not None:
-                        data["timestamp"] = match["timestamp"]
-                        result.append(data)
+                    tmdata = self.get_summoner_data_from_match(resp, teammate)
+                    if tmdata is not None:
+                        tmdata["timestamp"] = match["timestamp"]
+                        result.append(tmdata)
         return result
 
     ################################################################################
@@ -247,6 +249,7 @@ class Analytics:
             "summonerName",
             "timestamp",
             "queueId",
+            # "teammates",
             "win",
             "champion",
             "champLevel",
@@ -387,3 +390,11 @@ class Analytics:
 
         print("\nSummary by Champion/Win:")
         print(self.__generate_summary_by_champion(df, teammates is not None))
+
+    def pretty_print_impact(self, data, summoner, teammates):
+        df = self.__generate_df_for_summoner_data_from_match(data)
+        filtered = df["summonerName"] == summoner
+
+        print("\nFiltered Games:")
+        print(df[filtered])
+        # print(df.dtypes)

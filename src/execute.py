@@ -73,14 +73,18 @@ def main():
             print(analytics.filter_match_by_data(resp, args.summoner, roles, lanes))
 
         # analytics requests
-        if args.request == "get_stats_by_summoner":
+        if args.request == "get_stats_by_role":
             resp = api.get_matchlist_by_summoner(args.summoner)
-            payload = analytics.get_stats_by_summoner(resp, args.summoner, roles, lanes, champions)
+            payload = analytics.get_stats_by_role(resp, args.summoner, roles, lanes)
             analytics.pretty_print_stats(payload, args.summoner)
         if args.request == "get_stats_by_champion":
             resp = api.get_matchlist_by_summoner(args.summoner)
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
             analytics.pretty_print_stats(payload, args.summoner, teammates=teammates)
+        if args.request == "get_impact_by_team":
+            resp = api.get_matchlist_by_summoner(args.summoner)
+            payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
+            # analytics.pretty_print_impact(payload, args.summoner, teammates=teammates)
 
 
 if __name__ == "__main__":

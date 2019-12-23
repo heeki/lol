@@ -60,7 +60,7 @@ class Test(unittest.TestCase):
         demonstrate ability to generate stat dataframe by summoner
         """
         resp = self.api.get_matchlist_by_summoner("higmeista")
-        payload = self.analytics.get_stats_by_summoner(resp, "higmeista", None, None, None)
+        payload = self.analytics.get_stats_by_role(resp, "higmeista", None, None, None)
         self.assertEqual(payload[-1]["queueId"], 2000)
 
     def test_get_stats_by_champion(self):
