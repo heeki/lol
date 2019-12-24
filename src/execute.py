@@ -38,6 +38,10 @@ def main():
             champions = None
         if args.teammates is not None:
             teammates = args.teammates.split(",")
+            if args.summoner is not None:
+                teammates.remove(args.summoner)
+            if args.teammate is not None:
+                teammates.remove(args.teammate)
         else:
             teammates = None
         # print("roles={}".format(json.dumps(roles)))
@@ -83,11 +87,10 @@ def main():
             payload = analytics.get_stats_by_champion(resp, args.summoner, champions=champions, teammates=teammates)
             analytics.pretty_print_teammates(payload, args.summoner, teammates=teammates)
         if args.request == "get_impact_by_team":
-            considerations = [args.summoner] + [teammate for teammate in teammates if teammate != args.summoner]
-            for consideration in considerations:
-                resp = api.get_matchlist_by_summoner(consideration)
-                payload = analytics.get_stats_by_champion(resp, consideration, champions=champions, teammates=teammates)
-                analytics.pretty_print_impact_by_team(payload, consideration)
+            for teammate in teammates:
+                resp = api.get_matchlist_by_summoner(teammate)
+                payload = analytics.get_stats_by_champion(resp, teammate, champions=champions, teammates=teammates)
+                analytics.pretty_print_impact_by_team(payload, teammate)
         if args.request == "get_impact_of_teammate":
             analytics.pretty_print_impact_of_teammate(teammates, teammate=args.teammate)
 
