@@ -446,6 +446,8 @@ class Analytics:
     def pretty_print_impact_of_teammate(self, considerations, teammate):
         result = None
         for consideration in considerations:
+            if consideration == teammate:
+                continue
             resp = self.api.get_matchlist_by_summoner(consideration)
             payload = self.get_stats_by_teammate(resp, consideration, teammate)
 
@@ -458,3 +460,25 @@ class Analytics:
         print("\nComparison With/Without {}".format(teammate))
         print(result)
 
+        analysis = {
+            "Summoners": {},
+            "WinsMore": [],
+            "Neutral": [],
+            "LosesMore": []
+        }
+        for index, row in result.iterrows():
+            if index[0] not in analysis["Summoners"]:
+                analysis["Summoners"][index[0]] = {}
+            analysis["Summoners"][index[0]][index[1]] = row["Win%"]
+        for summoner in analysis["Summoners"]:
+            delta = analysis["Summoners"][summoner]["Include"] - analysis["Summoners"][summoner]["Exclude"]
+            if delta >= 0.1:
+                analysis["WinsMore"].append(summoner)
+            elif delta <= -0.1:
+                analysis["LosesMore"].append(summoner)
+            else:
+                analysis["Neutral"].append(summoner)
+        print("People who win more when playing with {}: {}".format(teammate, json.dumps(analysis["WinsMore"])))
+        print("People who are neutral when playing with {}: {}".format(teammate, json.dumps(analysis["Neutral"])))
+        print("People who lose more when playing with {}: {}".format(teammate, json.dumps(analysis["LosesMore"])))
+        return analysis

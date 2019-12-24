@@ -92,7 +92,23 @@ def main():
                 payload = analytics.get_stats_by_champion(resp, teammate, champions=champions, teammates=teammates)
                 analytics.pretty_print_impact_by_team(payload, teammate)
         if args.request == "get_impact_of_teammate":
-            analytics.pretty_print_impact_of_teammate(teammates, teammate=args.teammate)
+            summary = {
+                "WinsMore": {},
+                "LosesMore": {}
+            }
+            for teammate in teammates:
+                payload = analytics.pretty_print_impact_of_teammate(teammates, teammate=teammate)
+                for summoner in payload["WinsMore"]:
+                    if summoner not in summary["WinsMore"]:
+                        summary["WinsMore"][summoner] = 1
+                    else:
+                        summary["WinsMore"][summoner] += 1
+                for summoner in payload["LosesMore"]:
+                    if summoner not in summary["LosesMore"]:
+                        summary["LosesMore"][summoner] = 1
+                    else:
+                        summary["LosesMore"][summoner] += 1
+            print(json.dumps(summary))
 
 
 if __name__ == "__main__":
