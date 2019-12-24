@@ -7,13 +7,13 @@ class Analytics:
     def __init__(self, api):
         with open("etc/champion.json") as jdata:
             self.champions = json.load(jdata)
-            self.champion_id_to_name = self.__generate_champion_id_to_name()
+            self.champion_id_to_name = self.generate_champion_id_to_name()
         with open("etc/queues.json") as jdata:
             self.queues = json.load(jdata)
-            self.queue_id_to_name = self.__generate_queue_id_to_name()
+            self.queue_id_to_name = self.generate_queue_id_to_name()
         with open("etc/summoner.json") as jdata:
             self.summoner = json.load(jdata)
-            self.spell_id_to_name = self.__generate_spell_id_to_name()
+            self.spell_id_to_name = self.generate_spell_id_to_name()
         self.api = api
         pd.options.display.float_format = "{:.2f}".format
         pd.options.display.max_rows = None
@@ -28,13 +28,13 @@ class Analytics:
     ################################################################################
     # functions: generic helper
     ################################################################################
-    def __generate_champion_id_to_name(self):
+    def generate_champion_id_to_name(self):
         mapping = {}
         for champion in self.champions["data"]:
             mapping[int(self.champions["data"][champion]["key"])] = self.champions["data"][champion]["name"]
         return mapping
 
-    def __generate_queue_id_to_name(self):
+    def generate_queue_id_to_name(self):
         mapping = {}
         for queue in self.queues:
             qid = queue["queueId"]
@@ -44,7 +44,7 @@ class Analytics:
             mapping[qid]["description"] = queue["description"]
         return mapping
 
-    def __generate_spell_id_to_name(self):
+    def generate_spell_id_to_name(self):
         mapping = {}
         for spell in self.summoner["data"]:
             mapping[int(self.summoner["data"][spell]["key"])] = self.summoner["data"][spell]["name"]
@@ -143,16 +143,17 @@ class Analytics:
         tcount = 1
         for tid in payload["teams"]:
             for pid in payload["teams"][tid]["participants"]:
-                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                consideration = payload["teams"][tid]["participants"][pid]["summonerName"]
+                if consideration == summoner:
                     result = payload["teams"][tid]["participants"][pid]
                     result["win"] = payload["teams"][tid]["win"]
                     result["queueId"] = payload["queueId"]
-                elif teammates is not None and payload["teams"][tid]["participants"][pid]["summonerName"] in teammates:
+                elif teammates is not None and consideration in teammates:
                     tcount += 1
         result["teammates"] = tcount
         return result
 
-    def get_stats_by_role(self, data, summoner, roles=None, lanes=None):
+    def get_stats_by_role(self, data, summoner, roles, lanes):
         payload = self.get_matchlist(data, roles, lanes)
         result = []
         for match in payload:
@@ -172,10 +173,21 @@ class Analytics:
             result.append(data)
             if teammates is not None:
                 for teammate in teammates:
-                    tmdata = self.get_summoner_data_from_match(resp, teammates)
+                    tmdata = self.get_summoner_data_from_match(resp, teammate, teammates)
                     if tmdata is not None:
                         tmdata["timestamp"] = match["timestamp"]
                         result.append(tmdata)
+        return result
+
+    def get_stats_by_teammate(self, data, summoner, teammate):
+        payload = self.get_matchlist(data)
+        result = []
+        for match in payload:
+            resp = self.api.get_match_by_id(match["gid"])
+            data = self.get_summoner_data_from_match(resp, summoner)
+            data["timestamp"] = match["timestamp"]
+            data["tminclude"] = "Include" if self.filter_match_by_summoner(resp, teammate) else "Exclude"
+            result.append(data)
         return result
 
     ################################################################################
@@ -237,10 +249,20 @@ class Analytics:
                 check_lane = True
         return check_summoner & check_role & check_lane
 
+    def filter_match_by_summoner(self, data, summoner):
+        payload = self.summarize_match(data)
+        check_summoner = False
+        for tid in payload["teams"]:
+            for pid in payload["teams"][tid]["participants"]:
+                if payload["teams"][tid]["participants"][pid]["summonerName"] == summoner:
+                    target_pid = pid
+                    check_summoner = True
+        return check_summoner
+
     ################################################################################
     # functions: print helper
     ################################################################################
-    def __generate_df_for_summoner_data_from_match(self, data):
+    def generate_df_for_summoner_data_from_match(self, data):
         df = pd.DataFrame(data)
         df["kda"] = df.apply(
             lambda x: (x["kills"] + x["assists"]) / x["deaths"] if x["deaths"] != 0 else x["kills"] + x["assists"],
@@ -253,6 +275,7 @@ class Analytics:
             "timestamp",
             "queueId",
             "teammates",
+            "tminclude",
             "win",
             "champion",
             "champLevel",
@@ -276,7 +299,7 @@ class Analytics:
         # df = df.sort_values(by=["timestamp"], ascending=False)
         return df
 
-    def __generate_summary_overall(self, data):
+    def generate_summary_overall(self, data):
         df = data.agg({
             "kills": "mean",
             "deaths": "mean",
@@ -290,7 +313,7 @@ class Analytics:
         df = kda.append(df)
         return df
 
-    def __generate_summary_wins(self, data, summoner):
+    def generate_summary_wins(self, data, summoner):
         df = data.groupby(["summonerName", "win"]).agg({
             "win": "count"
         }).rename(columns={"win": "count"})
@@ -307,7 +330,7 @@ class Analytics:
         df = pd.concat([df.iloc[[n], :], df.drop(summoner, axis=0)], axis=0)
         return df
 
-    def __generate_summary_by_champion(self, data, include_role=True):
+    def generate_summary_by_champion(self, data, include_role=True):
         if include_role:
             pivot = ["summonerName", "role", "champion", "win"]
         else:
@@ -351,12 +374,25 @@ class Analytics:
         df = df.reindex(columns=order)
         return df
 
-    def __generate_summary_by_teammates(self, data):
+    def generate_summary_by_teammates(self, data):
         df = data.groupby(["teammates", "win"]).agg({
             "win": "count"
         }).rename(columns={"win": "count"})
         df.index = df.index.rename("result", level=1)
         df = df.unstack(1)
+        df = df.fillna(0)
+        df.columns = df.columns.get_level_values(1)
+        df.columns.name = None
+        df = df.reindex(columns=["Win", "Fail"])
+        df["Win%"] = df["Win"] / (df["Win"] + df["Fail"])
+        return df
+
+    def generate_summary_of_teammate(self, data):
+        df = data.groupby(["summonerName", "tminclude", "win"]).agg({
+            "win": "count"
+        }).rename(columns={"win": "count"})
+        df.index = df.index.rename("result", level=2)
+        df = df.unstack(2)
         df = df.fillna(0)
         df.columns = df.columns.get_level_values(1)
         df.columns.name = None
@@ -389,21 +425,36 @@ class Analytics:
         print(df[filtered])
 
         print("\nSummary of Summoner Performance:")
-        print(self.__generate_summary_overall(df[filtered]).to_string())
+        print(self.generate_summary_overall(df[filtered]).to_string())
 
         print("\nSummary of Win/Loss:")
-        print(self.__generate_summary_wins(df, summoner))
+        print(self.generate_summary_wins(df, summoner))
 
     def pretty_print_teammates(self, data, summoner, teammates=None):
-        df = self.__generate_df_for_summoner_data_from_match(data)
+        df = self.generate_df_for_summoner_data_from_match(data)
         self.pretty_print_stats(df, summoner, teammates)
 
         print("\nSummary by Champion/Win:")
-        print(self.__generate_summary_by_champion(df, teammates is not None))
+        print(self.generate_summary_by_champion(df, teammates is not None))
 
-    def pretty_print_impact(self, data, summoner, teammates):
-        df = self.__generate_df_for_summoner_data_from_match(data)
-        # self.pretty_print_stats(df, summoner, teammates)
+    def pretty_print_impact_by_team(self, data, summoner):
+        df = self.generate_df_for_summoner_data_from_match(data)
 
         print("\nSummary by Comp/Win for {}:".format(summoner))
-        print(self.__generate_summary_by_teammates(df[df["summonerName"] == summoner]))
+        print(self.generate_summary_by_teammates(df[df["summonerName"] == summoner]))
+
+    def pretty_print_impact_of_teammate(self, considerations, teammate):
+        result = None
+        for consideration in considerations:
+            resp = self.api.get_matchlist_by_summoner(consideration)
+            payload = self.get_stats_by_teammate(resp, consideration, teammate)
+
+            df = self.generate_df_for_summoner_data_from_match(payload)
+            summary = self.generate_summary_of_teammate(df)
+            if result is None:
+                result = summary
+            else:
+                result = pd.concat([result, summary], axis=0)
+        print("\nComparison With/Without {}".format(teammate))
+        print(result)
+

@@ -58,4 +58,5 @@ python src/execute.py --request get_stats_by_role --summoner $SUMMONER --roles $
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS
 python src/execute.py --request get_stats_by_champion --summoner $SUMMONER --champions $CHAMPIONS --teammates $TEAMMATES
 python src/execute.py --request get_impact_by_team --summoner $SUMMONER --teammates $TEAMMATES
+python src/execute.py --request get_impact_of_teammate --summoner $SUMMONER --teammates $TEAMMATES --teammate $TEAMMATE
 ```

@@ -11,6 +11,7 @@ def main():
     parser.add_argument('--roles', help='comma separated list of possible roles')
     parser.add_argument('--lanes', help='comma separated list of possible lanes')
     parser.add_argument('--champions', help='comma separated list of possible champions')
+    parser.add_argument('--teammate', help='teammate under consideration')
     parser.add_argument('--teammates', help='comma separated list of teammates')
     parser.add_argument('--request', help='api request')
     parser.add_argument('--output', default="json", help='print as json|csv')
@@ -86,7 +87,9 @@ def main():
             for consideration in considerations:
                 resp = api.get_matchlist_by_summoner(consideration)
                 payload = analytics.get_stats_by_champion(resp, consideration, champions=champions, teammates=teammates)
-                analytics.pretty_print_impact(payload, consideration, teammates=teammates)
+                analytics.pretty_print_impact_by_team(payload, consideration)
+        if args.request == "get_impact_of_teammate":
+            analytics.pretty_print_impact_of_teammate(teammates, teammate=args.teammate)
 
 
 if __name__ == "__main__":
