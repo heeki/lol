@@ -109,8 +109,8 @@ class Analytics:
         payload = []
         for match in data["matches"]:
             info = {
-                "platform": match["platformId"],
                 "gid": match["gameId"],
+                "platform": match["platformId"],
                 "champion": self.champion_id_to_name[match["champion"]],
                 "map": self.queue_id_to_name[match["queue"]]["map"],
                 "queue": self.queue_id_to_name[match["queue"]]["description"],
@@ -128,6 +128,44 @@ class Analytics:
                 if self.filter_match_by_champion(match, champions):
                     payload.append(info)
         return payload
+
+    def get_champions_by_player(self, data, summoner, champions):
+        matches = self.get_matchlist(data)
+        result = []
+        for match in matches:
+            payload = self.api.get_match_by_id(match["gid"])
+            info = {
+                # "gid": payload["gameId"],
+                # "platform": payload["platformId"],
+                # "map": self.queue_id_to_name[payload["queueId"]]["map"],
+                "queue": self.queue_id_to_name[payload["queueId"]]["description"],
+                # "season": payload["seasonId"],
+                # "gameVersion": payload["gameVersion"],
+                "timestamp": self.__convert_epoch_to_datetime(payload["gameCreation"]),
+                "teams": {
+                    100: [],
+                    200: []
+                }
+            }
+            identities = {}
+            for identity in payload["participantIdentities"]:
+                identities[identity["participantId"]] = identity["player"]["summonerName"]
+            for participant in payload["participants"]:
+                tmp_participant = identities[participant["participantId"]]
+                tmp_champion = self.champion_id_to_name[participant["championId"]]
+                player = {
+                    "participant": tmp_participant,
+                    "champion": tmp_champion
+                }
+                if (tmp_participant == summoner):
+                    info["teams"][participant["teamId"]].append(player)
+                for champion in champions:
+                    if (tmp_champion == champion):
+                        info["teams"][participant["teamId"]].append(player)
+                # pkey = "{}-{}".format(participant["teamId"], participant["participantId"])
+                # info[pkey] = "{}-{}".format(identities[participant["participantId"]], self.champion_id_to_name[participant["championId"]])
+            result.append(info)
+        return result
 
     def get_matchdata_by_summoner(self, data):
         matches = self.get_matchlist(data)
@@ -297,6 +335,10 @@ class Analytics:
         ]
         df = df.reindex(columns=order)
         # df = df.sort_values(by=["timestamp"], ascending=False)
+        return df
+
+    def generate_df_for_champion_player(self, data):
+        df = pd.DataFrame(data)
         return df
 
     def generate_summary_overall(self, data):
@@ -482,3 +524,9 @@ class Analytics:
         print("People who are neutral when playing with {}: {}".format(teammate, json.dumps(analysis["Neutral"])))
         print("People who lose more when playing with {}: {}".format(teammate, json.dumps(analysis["LosesMore"])))
         return analysis
+
+    def pretty_print_champion_player(self, data):
+        pd.set_option('display.max_rows', None)
+        pd.set_option('display.max_columns', None)
+        df = self.generate_df_for_champion_player(data)
+        print(df)

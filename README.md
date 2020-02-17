@@ -51,6 +51,7 @@ python src/execute.py --request get_summoner_by_name --summoner $SUMMONER
 python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER
 python src/execute.py --request get_matchlist_by_summoner --summoner $SUMMONER --roles $ROLES --lanes $LANES
 python src/execute.py --request get_matchdata_by_summoner --summoner $SUMMONER
+python src/execute.py --request get_champions_by_player --summoner $SUMMONER --champions $CHAMPIONS
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID
 python src/execute.py --request get_match_by_id --match_id $MATCH_ID --output csv
 python src/execute.py --request filter_match_by_data --match_id $MATCH_ID --summoner $SUMMONER --roles $ROLES --lanes $LANES

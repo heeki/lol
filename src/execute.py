@@ -46,7 +46,7 @@ def main():
             teammates = None
         # print("roles={}".format(json.dumps(roles)))
         # print("lanes={}".format(json.dumps(lanes)))
-        # print("champions={}".format(json.dumps(champions)))
+        print("champions={}".format(json.dumps(champions)))
         # print("teammates={}".format(json.dumps(teammates)))
 
         # basic requests
@@ -60,6 +60,14 @@ def main():
             if args.output == "json":
                 for record in payload:
                     print(json.dumps(record))
+        if args.request == "get_champions_by_player":
+            resp = api.get_matchlist_by_summoner(args.summoner)
+            payload = analytics.get_champions_by_player(resp, args.summoner, champions)
+            if args.output == "json":
+                for record in payload:
+                    print(json.dumps(record))
+            elif args.output == "df":
+                analytics.pretty_print_champion_player(payload)
         if args.request == "get_match_by_id":
             resp = api.get_match_by_id(args.match_id)
             payload = analytics.summarize_match(resp)
