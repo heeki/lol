@@ -46,7 +46,7 @@ def main():
             teammates = None
         # print("roles={}".format(json.dumps(roles)))
         # print("lanes={}".format(json.dumps(lanes)))
-        print("champions={}".format(json.dumps(champions)))
+        # print("champions={}".format(json.dumps(champions)))
         # print("teammates={}".format(json.dumps(teammates)))
 
         # basic requests

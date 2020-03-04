@@ -34,6 +34,10 @@ class Api:
                     self.log.error("get_data_from_url(): socket.error {}".format(e))
                     if e.code == 403:
                         self.log.error("get_data_from_url(): auth error -> retrieve updated api key")
+                    if e.code == 429:
+                        self.log.error("get_data_from_url(): throttled -> too many requests")
+                        time.sleep(10)
+                        continue
                     sys.exit(1)
                 except urllib.error.URLError as e:
                     self.log.error("get_data_from_url(): urllib.error.URLError {}".format(e))
@@ -44,7 +48,7 @@ class Api:
                     self.log.error("get_data_from_url(): urllib.error.HTTPError {}".format(e))
                 except ssl.SSLError as e:
                     self.log.error("get_data_from_url(): ssl.SSLError {}".format(e))
-                time.sleep(15)
+                time.sleep(10)
         except KeyboardInterrupt:
             self.log.error("get_data_from_url(): user interrupted")
             sys.exit(1)
